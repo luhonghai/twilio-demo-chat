@@ -1,25 +1,5 @@
 package com.mhealth.chat.demo;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-
-import com.twilio.ipmessaging.Channel;
-import com.twilio.ipmessaging.Channel.ChannelType;
-import com.twilio.ipmessaging.ChannelListener;
-import com.twilio.ipmessaging.Channels;
-import com.twilio.ipmessaging.Constants;
-import com.twilio.ipmessaging.Constants.StatusListener;
-import com.twilio.ipmessaging.Member;
-import com.twilio.ipmessaging.Members;
-import com.twilio.ipmessaging.Message;
-import com.twilio.ipmessaging.Messages;
-import com.twilio.ipmessaging.ErrorInfo;
-import com.twilio.ipmessaging.internal.Logger;
-
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -27,6 +7,7 @@ import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -41,11 +22,32 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.ChannelListener;
+import com.twilio.ipmessaging.Channels;
+import com.twilio.ipmessaging.Constants;
+import com.twilio.ipmessaging.Constants.StatusListener;
+import com.twilio.ipmessaging.ErrorInfo;
+import com.twilio.ipmessaging.Member;
+import com.twilio.ipmessaging.Members;
+import com.twilio.ipmessaging.Message;
+import com.twilio.ipmessaging.Messages;
+import com.twilio.ipmessaging.internal.Logger;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
 import uk.co.ribot.easyadapter.EasyAdapter;
 
 public class MessageActivity extends AppCompatActivity implements ChannelListener
@@ -105,11 +107,15 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     private View viewVideo;
     private View viewChat;
 
+    @Bind(R.id.toolbar)
+    Toolbar toolbar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         createUI();
+
         EventBus.getDefault().register(this);
     }
 
@@ -142,6 +148,10 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     private void createUI()
     {
         setContentView(R.layout.activity_message);
+        ButterKnife.bind(this);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        setTitle("");
         viewVideo = findViewById(R.id.videoLayout);
         viewChat = findViewById(R.id.chat);
         if (getIntent() != null) {
@@ -153,9 +163,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                 channel = channelsObject.getChannel(channelSid);
                 if (channel != null) {
                     channel.setListener(MessageActivity.this);
-                    this.setTitle(
-                        "Name:" + channel.getFriendlyName() + " Type:"
-                        + ((channel.getType() == ChannelType.PUBLIC) ? "Public" : "Private"));
+                    getSupportActionBar().setTitle(channel.getFriendlyName());
                 }
             }
         }

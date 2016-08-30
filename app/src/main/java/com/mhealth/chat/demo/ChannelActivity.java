@@ -1,77 +1,227 @@
 package com.mhealth.chat.demo;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Parcelable;
-import android.view.Gravity;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatTextView;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.Toast;
+import android.view.View;
+import android.widget.TextView;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.facebook.drawee.view.SimpleDraweeView;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.OptionalPendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.twilio.ipmessaging.Channel;
-import com.twilio.ipmessaging.Channel.ChannelType;
-import com.twilio.ipmessaging.ChannelListener;
-import com.twilio.ipmessaging.Channels;
 import com.twilio.ipmessaging.Constants;
-import com.twilio.ipmessaging.Constants.CreateChannelListener;
 import com.twilio.ipmessaging.Constants.StatusListener;
 import com.twilio.ipmessaging.ErrorInfo;
-import com.twilio.ipmessaging.IPMessagingClient;
-import com.twilio.ipmessaging.IPMessagingClientListener;
-import com.twilio.ipmessaging.Member;
-import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.UserInfo;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
-import uk.co.ribot.easyadapter.EasyAdapter;
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
 @SuppressLint("InflateParams")
-public class ChannelActivity extends Activity implements ChannelListener, IPMessagingClientListener
+public class ChannelActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
+        GoogleApiClient.OnConnectionFailedListener
 {
+
+
     private static final Logger logger = Logger.getLogger(ChannelActivity.class);
-
-    private static final String[] CHANNEL_OPTIONS = { "Join" };
-
-    private static final int JOIN = 0;
-
-    private ListView               listView;
-    private BasicIPMessagingClient basicClient;
-    private List<Channel>          channels = new ArrayList<Channel>();
-    private EasyAdapter<Channel>   adapter;
-    private AlertDialog            createChannelDialog;
-    private Channels               channelsObject;
-    private Channel[] channelArray;
 
     private static final Handler handler = new Handler();
     private AlertDialog          incomingChannelInvite;
-    private StatusListener       joinListener;
     private StatusListener       declineInvitationListener;
 
+    @Bind(R.id.tabs)
+    TabLayout tabLayout;
+
+    @Bind(R.id.viewpager)
+    ViewPager viewPager;
+
+    Adapter adapter;
+
+    @Bind(R.id.nav_view)
+    NavigationView navigationView;
+
+    BasicIPMessagingClient chatClient;
+
+    @Bind(R.id.toolbar)
+    Toolbar toolbar;
+
+    @Bind(R.id.drawer_layout)
+    DrawerLayout drawer;
+
+    private GoogleApiClient mGoogleApiClient;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_channel);
-        basicClient = TwilioApplication.get().getBasicClient();
-        if (basicClient != null && basicClient.getIpMessagingClient() != null) {
-            basicClient.getIpMessagingClient().setListener(ChannelActivity.this);
-            setupListView();
+        ButterKnife.bind(this);
+        setSupportActionBar(toolbar);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                super.onDrawerClosed(drawerView);
+            }
+
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                super.onDrawerSlide(drawerView, slideOffset);
+            }
+        };
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestProfile()
+                .build();
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+                .build();
+
+        setupViewPager();
+        setupTabLayout();
+        navigationView.setNavigationItemSelectedListener(this);
+        chatClient = TwilioApplication.get().getBasicClient();
+        setNavigationHeader();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mLogoutDialog != null && mLogoutDialog.isShowing()) {
+            mLogoutDialog.dismiss();
         }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private void setNavigationHeader() {
+
+        View headerView = navigationView.getHeaderView(0);
+        MenuItem logout = navigationView.getMenu().findItem(R.id.nav_logout);
+        View userProfileView = headerView.findViewById(R.id.view_user_profile);
+        if (userProfileView != null)
+            userProfileView.setVisibility(View.VISIBLE);
+        if (logout != null)
+            logout.setVisible(true);
+        if (chatClient != null && chatClient.getIpMessagingClient() != null) {
+            UserInfo userInfo = chatClient.getIpMessagingClient().getMyUserInfo();
+            final SimpleDraweeView imgUserProfile = (SimpleDraweeView) headerView.findViewById(R.id.img_user_profile);
+            AppCompatTextView txtUserName = (AppCompatTextView) headerView.findViewById(R.id.txt_user_name);
+            OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
+            if (opr.isDone()) {
+                final GoogleSignInResult result = opr.get();
+                if (result != null && result.getSignInAccount() != null && result.getSignInAccount().getPhotoUrl() != null) {
+                    try {
+                        imgUserProfile.setImageURI(result.getSignInAccount().getPhotoUrl().toString());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
+                    @Override
+                    public void onResult(@NonNull GoogleSignInResult result) {
+                        if (result.getSignInAccount() != null && result.getSignInAccount().getPhotoUrl() != null) {
+                            try {
+                                imgUserProfile.setImageURI(result.getSignInAccount().getPhotoUrl().toString());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+
+            txtUserName.setText(userInfo.getFriendlyName());
+        }
+    }
+
+
+
+    private void setupViewPager() {
+        adapter = new Adapter(getSupportFragmentManager());
+        adapter.addFragment(ChannelFragment.getInstance(Channel.ChannelType.PUBLIC), "Public", R.drawable.ic_public_black_24dp);
+        adapter.addFragment(ChannelFragment.getInstance(Channel.ChannelType.PRIVATE), "Private", R.drawable.ic_security_black_24dp);
+        viewPager.setAdapter(adapter);
+        tabLayout.setupWithViewPager(viewPager);
+    }
+
+    private void setupTabLayout() {
+        for (int i = 0; i < tabLayout.getTabCount(); i++) {
+            TabLayout.Tab tab = tabLayout.getTabAt(i);
+            if (tab != null)
+                tab.setCustomView(adapter.getTabView(i));
+        }
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                View view = tab.getCustomView();
+                if (view != null) {
+                    TextView txtTitle = (TextView) view.findViewById(R.id.tab_title);
+                    txtTitle.setTypeface(null, Typeface.BOLD);
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                View view = tab.getCustomView();
+                if (view != null) {
+                    TextView txtTitle = (TextView) view.findViewById(R.id.tab_title);
+                    txtTitle.setTypeface(null, Typeface.NORMAL);
+                }
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
     }
 
     @Override
@@ -85,94 +235,10 @@ public class ChannelActivity extends Activity implements ChannelListener, IPMess
     public boolean onOptionsItemSelected(MenuItem item)
     {
         switch (item.getItemId()) {
-            case R.id.action_create_public: showCreateChannelDialog(ChannelType.PUBLIC); break;
-            case R.id.action_create_private: showCreateChannelDialog(ChannelType.PRIVATE); break;
-            case R.id.action_create_public_withoptions: {
-                Random rand = new Random();
-                int    value = rand.nextInt(50);
-
-                Channels channelsLocal = basicClient.getIpMessagingClient().getChannels();
-
-                final Map<String, String> attrs = new HashMap<String, String>();
-                attrs.put("topic", "testing channel creation with options");
-
-                Map<String, Object> options = new HashMap<String, Object>();
-                options.put(Constants.CHANNEL_FRIENDLY_NAME, "Pub_TestChannelF_" + value);
-                options.put(Constants.CHANNEL_UNIQUE_NAME, "Pub_TestChannelU_" + value);
-                options.put(Constants.CHANNEL_TYPE, ChannelType.PUBLIC);
-                options.put("attributes", attrs);
-
-                channelsLocal.createChannel(options, new CreateChannelListener() {
-                    @Override
-                    public void onCreated(final Channel newChannel)
-                    {
-                        logger.d("Successfully created a channel with options.");
-                    }
-
-                    @Override
-                    public void onError(ErrorInfo errorInfo)
-                    {
-                        logger.e("Error creating a channel");
-                    }
-                });
+            case R.id.action_add:
+                Intent intent = new Intent(this, AddGroupActivity.class);
+                startActivityForResult(intent, ActivityResultCommon.ADD_GROUP);
                 break;
-            }
-            case R.id.action_create_private_withoptions: {
-                Random rand = new Random();
-                int    value = rand.nextInt(50);
-
-                Channels channelsLocal = basicClient.getIpMessagingClient().getChannels();
-                Map<String, Object> options = new HashMap<String, Object>();
-                options.put(Constants.CHANNEL_FRIENDLY_NAME, "Priv_TestChannelF_" + value);
-                options.put(Constants.CHANNEL_UNIQUE_NAME, "Priv_TestChannelU_" + value);
-                options.put(Constants.CHANNEL_TYPE, ChannelType.PUBLIC);
-                channelsLocal.createChannel(null, null);
-                break;
-            }
-            case R.id.action_search_by_unique_name: showSearchChannelDialog(); break;
-            case R.id.action_user_info:
-                startActivity(new Intent(getApplicationContext(), UserInfoActivity.class));
-                break;
-            case R.id.action_logout:
-                basicClient.getIpMessagingClient().shutdown();
-                finish();
-                break;
-            case R.id.action_unregistercm:
-                String gcmToken = basicClient.getGCMToken();
-                basicClient.getIpMessagingClient().unregisterGCMToken(
-                    gcmToken, new StatusListener() {
-                        @Override
-                        public void onError(ErrorInfo errorInfo)
-                        {
-                            logger.w("GCM unregistration not successful");
-                            runOnUiThread(new Runnable() {
-                                public void run()
-                                {
-                                    Toast
-                                        .makeText(ChannelActivity.this,
-                                                  "GCM unregistration not successful",
-                                                  Toast.LENGTH_SHORT)
-                                        .show();
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onSuccess()
-                        {
-                            logger.d("GCM unregistration successful");
-                            runOnUiThread(new Runnable() {
-                                public void run()
-                                {
-                                    Toast
-                                        .makeText(ChannelActivity.this,
-                                                  "GCM unregistration successful",
-                                                  Toast.LENGTH_SHORT)
-                                        .show();
-                                }
-                            });
-                        }
-                    });
         }
         return super.onOptionsItemSelected(item);
     }
@@ -182,7 +248,6 @@ public class ChannelActivity extends Activity implements ChannelListener, IPMess
     {
         super.onResume();
         handleIncomingIntent(getIntent());
-        getChannels();
     }
 
     private boolean handleIncomingIntent(Intent intent)
@@ -201,187 +266,6 @@ public class ChannelActivity extends Activity implements ChannelListener, IPMess
         return false;
     }
 
-    private void showCreateChannelDialog(final ChannelType type)
-    {
-        AlertDialog.Builder builder = new AlertDialog.Builder(ChannelActivity.this);
-        String              title = "Enter " + type.toString() + " name";
-
-        // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(getLayoutInflater().inflate(R.layout.dialog_add_channel, null))
-            .setTitle(title)
-            .setPositiveButton(
-                "Create",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        String channelName =
-                            ((EditText)createChannelDialog.findViewById(R.id.channel_name))
-                                .getText()
-                                .toString();
-                        logger.d("Creating channel with friendly Name|" + channelName + "|");
-                        Channels channelsLocal = basicClient.getIpMessagingClient().getChannels();
-                        channelsLocal.createChannel(channelName, type, new CreateChannelListener() {
-                            @Override
-                            public void onCreated(final Channel newChannel)
-                            {
-                                logger.d("Successfully created a channel");
-                                if (newChannel != null) {
-                                    final String sid = newChannel.getSid();
-                                    ChannelType  type = newChannel.getType();
-                                    newChannel.setListener(ChannelActivity.this);
-                                    logger.d("Channel created with sid|" + sid + "| and type |"
-                                             + type.toString()
-                                             + "|");
-                                }
-                            }
-
-                            @Override
-                            public void onError(ErrorInfo errorInfo)
-                            {
-                                TwilioApplication.get().logErrorInfo("Error creating channel",
-                                                                     errorInfo);
-                            }
-                        });
-                    }
-                })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    dialog.cancel();
-                }
-            });
-        createChannelDialog = builder.create();
-        createChannelDialog.show();
-    }
-
-    private void showSearchChannelDialog()
-    {
-        AlertDialog.Builder builder = new AlertDialog.Builder(ChannelActivity.this);
-        String              title = "Enter unique channel name";
-
-        // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(getLayoutInflater().inflate(R.layout.dialog_search_channel, null))
-            .setTitle(title)
-            .setPositiveButton("Search", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    String channelName =
-                        ((EditText)createChannelDialog.findViewById(R.id.channel_name))
-                            .getText()
-                            .toString();
-                    logger.d("Searching for " + channelName);
-                    Channels channelsLocal = basicClient.getIpMessagingClient().getChannels();
-                    final Channel channel = channelsLocal.getChannelByUniqueName(channelName);
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run()
-                        {
-                            if (channel != null) {
-                                showToast(channel.getSid() + ":" + channel.getFriendlyName());
-                            } else {
-                                showToast("Channel not found.");
-                            }
-                        }
-                    });
-                }
-            });
-        createChannelDialog = builder.create();
-        createChannelDialog.show();
-    }
-
-    private void setupListView()
-    {
-        listView = (ListView)findViewById(R.id.channel_list);
-        adapter = new EasyAdapter<Channel>(
-            this,
-            ChannelViewHolder.class,
-            channels,
-            new ChannelViewHolder.OnChannelClickListener() {
-                @Override
-                public void onChannelClicked(final Channel channel)
-                {
-                    if (channel.getStatus() == Channel.ChannelStatus.JOINED) {
-                        final Channel channelSelected = channelsObject.getChannel(channel.getSid());
-                        if (channelSelected != null) {
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run()
-                                {
-                                    Intent i =
-                                        new Intent(ChannelActivity.this, MessageActivity.class);
-                                    i.putExtra(Constants.EXTRA_CHANNEL,
-                                               (Parcelable)channelSelected);
-                                    i.putExtra("C_SID", channelSelected.getSid());
-                                    startActivity(i);
-                                }
-                            }, 0);
-                        }
-                        return;
-                    }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(ChannelActivity.this);
-                    builder.setTitle("Select an option")
-                        .setItems(CHANNEL_OPTIONS, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which)
-                            {
-                                if (which == JOIN) {
-                                    dialog.cancel();
-                                    joinListener = new StatusListener() {
-                                        @Override
-                                        public void onError(ErrorInfo errorInfo)
-                                        {
-                                            TwilioApplication.get().logErrorInfo(
-                                                "failed to join channel", errorInfo);
-                                        }
-
-                                        @Override
-                                        public void onSuccess()
-                                        {
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run()
-                                                {
-                                                    adapter.notifyDataSetChanged();
-                                                }
-                                            });
-                                            logger.d("Successfully joined channel");
-                                        }
-
-                                    };
-                                    channel.join(joinListener);
-                                }
-                            }
-                        });
-                    builder.show();
-                }
-            });
-        listView.setAdapter(adapter);
-        getChannels();
-    }
-
-    private void getChannels()
-    {
-        if (channels != null) {
-            if (basicClient != null && basicClient.getIpMessagingClient() != null) {
-                channelsObject = basicClient.getIpMessagingClient().getChannels();
-                channels.clear();
-                if (channelsObject != null) {
-                    channelArray = channelsObject.getChannels();
-                    setupListenersForChannel(channelArray);
-                    if (channelArray != null) {
-                        channels.addAll(new ArrayList<Channel>(Arrays.asList(channelArray)));
-                        Collections.sort(channels, new CustomChannelComparator());
-                        adapter.notifyDataSetChanged();
-                    }
-                }
-            }
-        }
-    }
-
     private void showIncomingInvite(final Channel channel)
     {
         handler.post(new Runnable() {
@@ -389,272 +273,147 @@ public class ChannelActivity extends Activity implements ChannelListener, IPMess
             public void run()
             {
                 if (incomingChannelInvite == null) {
-
                     incomingChannelInvite =
-                        new AlertDialog.Builder(ChannelActivity.this)
-                            .setTitle(R.string.incoming_call)
-                            .setMessage(R.string.incoming_call_message)
-                            .setPositiveButton(
-                                R.string.join,
-                                new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which)
-                                    {
-                                        channel.join(new StatusListener() {
-                                            @Override
-                                            public void onError(ErrorInfo errorInfo)
-                                            {
-                                                TwilioApplication.get().logErrorInfo(
-                                                    "Failed to join channel", errorInfo);
-                                            }
+                            new AlertDialog.Builder(ChannelActivity.this)
+                                    .setTitle(R.string.incoming_call)
+                                    .setMessage(R.string.incoming_call_message)
+                                    .setPositiveButton(
+                                            R.string.join,
+                                            new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which)
+                                                {
+                                                    channel.join(new StatusListener() {
+                                                        @Override
+                                                        public void onError(ErrorInfo errorInfo)
+                                                        {
+                                                            TwilioApplication.get().logErrorInfo(
+                                                                    "Failed to join channel", errorInfo);
+                                                        }
 
-                                            @Override
-                                            public void onSuccess()
-                                            {
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run()
-                                                    {
-                                                        adapter.notifyDataSetChanged();
-                                                    }
-                                                });
-                                                logger.d("Successfully joined channel");
-                                            }
-                                        });
-                                        incomingChannelInvite = null;
-                                    }
-                                })
-                            .setNegativeButton(
-                                R.string.decline,
-                                new DialogInterface.OnClickListener() {
+                                                        @Override
+                                                        public void onSuccess()
+                                                        {
+                                                            //TODO notify update list
+                                                            logger.d("Successfully joined channel");
+                                                        }
+                                                    });
+                                                    incomingChannelInvite = null;
+                                                }
+                                            })
+                                    .setNegativeButton(
+                                            R.string.decline,
+                                            new DialogInterface.OnClickListener() {
 
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which)
-                                    {
-                                        declineInvitationListener = new StatusListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which)
+                                                {
+                                                    declineInvitationListener = new StatusListener() {
 
-                                            @Override
-                                            public void onError(ErrorInfo errorInfo)
-                                            {
-                                                TwilioApplication.get().logErrorInfo(
-                                                    "Failed to decline channel invite", errorInfo);
-                                            }
+                                                        @Override
+                                                        public void onError(ErrorInfo errorInfo)
+                                                        {
+                                                            TwilioApplication.get().logErrorInfo(
+                                                                    "Failed to decline channel invite", errorInfo);
+                                                        }
 
-                                            @Override
-                                            public void onSuccess()
-                                            {
-                                                logger.d("Successfully declined channel invite");
-                                            }
+                                                        @Override
+                                                        public void onSuccess()
+                                                        {
+                                                            logger.d("Successfully declined channel invite");
+                                                        }
 
-                                        };
-                                        channel.declineInvitation(declineInvitationListener);
-                                        incomingChannelInvite = null;
-                                    }
-                                })
-                            .create();
+                                                    };
+                                                    channel.declineInvitation(declineInvitationListener);
+                                                    incomingChannelInvite = null;
+                                                }
+                                            })
+                                    .create();
                     incomingChannelInvite.show();
                 }
             }
         });
     }
 
-    private class CustomChannelComparator implements Comparator<Channel>
-    {
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.nav_logout) {
+            logout();
+        } else if (item.getItemId() == R.id.chat_group) {
+            DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+            if (drawer.isDrawerOpen(GravityCompat.START)) {
+                drawer.closeDrawer(GravityCompat.START);
+            }
+        }
+        return false;
+    }
+
+    private void doLogout() {
+        Auth.GoogleSignInApi.signOut(mGoogleApiClient);
+        Intent intent = new Intent(this, LoginActivity.class);
+        startActivity(intent);
+        this.finish();
+    }
+
+    MaterialDialog mLogoutDialog;
+    private void logout() {
+        mLogoutDialog = new MaterialDialog.Builder(this)
+                .title("Do you ready want to logout?")
+                .positiveText("Logout")
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        doLogout();
+                    }
+                })
+                .negativeText("Cancel")
+                .build();
+        mLogoutDialog.show();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    class Adapter extends FragmentStatePagerAdapter {
+        private final List<Fragment> mFragments = new ArrayList<>();
+        private final List<String> mFragmentTitles = new ArrayList<>();
+        private final List<Integer> mFragmentIcons = new ArrayList<>();
+
+        public Adapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        public void addFragment(Fragment fragment, String title, int icon) {
+            mFragments.add(fragment);
+            mFragmentTitles.add(title);
+            mFragmentIcons.add(icon);
+        }
+
         @Override
-        public int compare(Channel lhs, Channel rhs)
-        {
-            return lhs.getFriendlyName().compareTo(rhs.getFriendlyName());
+        public Fragment getItem(int position) {
+            return mFragments.get(position);
         }
-    }
 
-    private void setupListenersForChannel(Channel[] channelArray)
-    {
-        if (channelArray != null) {
-            for (int i = 0; i < channelArray.length; i++) {
-                if (channelArray[i] != null) {
-                    channelArray[i].setListener(ChannelActivity.this);
-                }
-            }
+        @Override
+        public int getCount() {
+            logger.d("Channel tab count " + mFragments.size());
+            return mFragments.size();
         }
-    }
 
-    private void showToast(String text)
-    {
-        Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG);
-        toast.setGravity(Gravity.CENTER_HORIZONTAL, 0, 0);
-        toast.show();
-    }
-
-    // ChannelListener implementation
-
-    @Override
-    public void onTypingStarted(Member member)
-    {
-        if (member != null) {
-            logger.d(member.getUserInfo().getIdentity() + " started typing");
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return mFragmentTitles.get(position);
         }
-    }
 
-    @Override
-    public void onTypingEnded(Member member)
-    {
-        if (member != null) {
-            logger.d(member.getUserInfo().getIdentity() + " ended typing");
+        public View getTabView(int position) {
+            View v = LayoutInflater.from(ChannelActivity.this).inflate(R.layout.tab_layout_home_page, null);
+            TextView tv = (TextView) v.findViewById(R.id.tab_title);
+            tv.setText(mFragmentTitles.get(position));
+            TintableImageView img = (TintableImageView) v.findViewById(R.id.tab_icon);
+            img.setImageResource(mFragmentIcons.get(position));
+            return v;
         }
-    }
-
-    @Override
-    public void onSynchronizationChange(Channel channel)
-    {
-        logger.e("Received onSynchronizationChange callback for channel |"
-                 + channel.getFriendlyName()
-                 + "|");
-    }
-
-    @Override
-    public void onChannelSynchronizationChange(Channel channel)
-    {
-        logger.e("Received onChannelSynchronizationChange callback for channel |"
-                 + channel.getFriendlyName()
-                 + "|");
-    }
-
-    @Override
-    public void onClientSynchronization(IPMessagingClient.SynchronizationStatus status)
-    {
-        logger.e("Received onClientSynchronization callback " + status.toString());
-    }
-
-    @Override
-    public void onUserInfoChange(UserInfo userInfo)
-    {
-        logger.e("Received onUserInfoChange callback");
-    }
-
-    @Override
-    public void onToastNotification(String channelId, String messageId)
-    {
-        logger.d("Received new push notification");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run()
-            {
-                showToast("Received new push notification");
-            }
-        });
-    }
-
-    @Override
-    public void onToastSubscribed()
-    {
-        logger.d("Subscribed to push notifications");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run()
-            {
-                showToast("Subscribed to push notifications");
-            }
-        });
-    }
-
-    @Override
-    public void onToastFailed(ErrorInfo errorInfo)
-    {
-        logger.d("Failed to subscribe to push notifications");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run()
-            {
-                showToast("Failed to subscribe to push notifications");
-            }
-        });
-    }
-
-    @Override
-    public void onChannelAdd(Channel channel)
-    {
-        logger.d("Received onChannelAdd callback for channel |" + channel.getFriendlyName() + "|");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run()
-            {
-                getChannels();
-            }
-        });
-    }
-
-    @Override
-    public void onChannelChange(Channel channel)
-    {
-        logger.d("Received onChannelChange callback for channel |" + channel.getFriendlyName()
-                 + "|");
-    }
-
-    @Override
-    public void onChannelDelete(Channel channel)
-    {
-        logger.d("Received onChannelDelete callback for channel |" + channel.getFriendlyName()
-                 + "|");
-    }
-
-    @Override
-    public void onError(ErrorInfo errorInfo)
-    {
-        TwilioApplication.get().logErrorInfo("Received onError callback", errorInfo);
-    }
-
-    // Message-related callbacks
-
-    @Override
-    public void onMessageAdd(Message message)
-    {
-        if (message != null) {
-            logger.d("Received onMessageAdd event");
-        }
-    }
-
-    @Override
-    public void onMessageChange(Message message)
-    {
-        if (message != null) {
-            logger.d("Received onMessageChange event");
-        }
-    }
-
-    @Override
-    public void onMessageDelete(Message message)
-    {
-        logger.d("Received onMessageDelete event");
-    }
-
-    // Member-related callbacks
-
-    @Override
-    public void onMemberJoin(Member member)
-    {
-        if (member != null) {
-            logger.d("Member " + member.getUserInfo().getIdentity() + " joined");
-        }
-    }
-
-    @Override
-    public void onMemberChange(Member member)
-    {
-        if (member != null) {
-            logger.d("Member " + member.getUserInfo().getIdentity() + " changed");
-        }
-    }
-
-    @Override
-    public void onMemberDelete(Member member)
-    {
-        if (member != null) {
-            logger.d("Member " + member.getUserInfo().getIdentity() + " deleted");
-        }
-    }
-
-    @Override
-    public void onAttributesChange(Map<String, String> map)
-    {
     }
 }

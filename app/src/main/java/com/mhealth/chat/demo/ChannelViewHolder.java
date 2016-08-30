@@ -1,11 +1,18 @@
 package com.mhealth.chat.demo;
 
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Channel.ChannelStatus;
+import com.twilio.ipmessaging.Constants;
 
 import android.graphics.Color;
+import android.graphics.drawable.Icon;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import org.json.JSONException;
+
 import uk.co.ribot.easyadapter.ItemViewHolder;
 import uk.co.ribot.easyadapter.PositionInfo;
 import uk.co.ribot.easyadapter.annotations.LayoutId;
@@ -17,14 +24,8 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
     @ViewId(R.id.channel_friendly_name)
     TextView friendlyName;
 
-    @ViewId(R.id.channel_sid)
-    TextView channelSid;
-
-    @ViewId(R.id.channel_updated_date)
-    TextView updatedDate;
-
-    @ViewId(R.id.channel_created_date)
-    TextView createdDate;
+    @ViewId(R.id.img_group)
+    ImageView imageView;
 
     View view;
 
@@ -53,20 +54,34 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
     public void onSetValues(Channel channel, PositionInfo arg1)
     {
         friendlyName.setText(channel.getFriendlyName());
-        channelSid.setText(channel.getSid());
+        try {
 
-        String updated = channel.getDateUpdatedAsDate() != null ?
-                             channel.getDateUpdatedAsDate().toString() :
-                             "<no updated date>";
-        updatedDate.setText(updated);
-
-        String created = channel.getDateCreatedAsDate() != null ?
-                             channel.getDateCreatedAsDate().toString() :
-                             "<no created date>";
-        createdDate.setText(created);
-
-        boolean chStatus = (channel.getStatus() == ChannelStatus.JOINED);
-        view.setBackgroundColor(chStatus ? Color.WHITE : Color.GRAY);
+            String icon = "";
+            try {
+                icon = channel.getAttributes().opt("group_icon").toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if (icon != null && icon.length() > 0) {
+                ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
+            } else {
+                channel.synchronize(new Constants.CallbackListener<Channel>() {
+                    @Override
+                    public void onSuccess(Channel c) {
+                        try {
+                            String icon = c.getAttributes().opt("group_icon").toString();
+                            if (icon != null && icon.length() > 0) {
+                                ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public interface OnChannelClickListener {

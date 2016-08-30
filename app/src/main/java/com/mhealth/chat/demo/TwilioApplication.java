@@ -6,11 +6,15 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.twilio.ipmessaging.ErrorInfo;
 
 public class TwilioApplication extends Application
 {
     private static TwilioApplication instance;
+
     private BasicIPMessagingClient   basicClient;
 
     public static TwilioApplication get()
@@ -24,6 +28,10 @@ public class TwilioApplication extends Application
         super.onCreate();
         TwilioApplication.instance = this;
         basicClient = new BasicIPMessagingClient(getApplicationContext());
+        ImageLoaderConfiguration imageLoaderConfiguration = new ImageLoaderConfiguration
+                .Builder(this).build();
+        ImageLoader.getInstance().init(imageLoaderConfiguration);
+        Fresco.initialize(this);
     }
 
     public BasicIPMessagingClient getBasicClient()

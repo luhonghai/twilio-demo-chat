@@ -13,8 +13,13 @@ import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.gson.Gson;
 
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.IPMessagingClient;
+import com.twilio.ipmessaging.UserInfo;
 
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.Settings.Secure;
 import android.support.annotation.NonNull;
@@ -31,6 +36,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -40,6 +46,11 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 import android.preference.PreferenceManager;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 
 public class LoginActivity extends FragmentActivity implements BasicIPMessagingClient.LoginListener,
         GoogleApiClient.OnConnectionFailedListener
@@ -58,6 +69,8 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     private static final int  PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     private GoogleApiClient mGoogleApiClient;
+
+    private GoogleSignInAccount acct;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -110,6 +123,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     }
 
     private void loginTwilio(GoogleSignInAccount acct) {
+        this.acct = acct;
         String idChosen = acct.getEmail();
         logger.d("User id " + idChosen);
         this.endpoint_id =
@@ -230,12 +244,58 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     @Override
     public void onLoginFinished()
     {
+        if (acct != null && chatClient.getIpMessagingClient() != null) {
+            final UserInfo userInfo = chatClient.getIpMessagingClient().getMyUserInfo();
+            if (userInfo != null) {
+                userInfo.setFriendlyName(acct.getDisplayName(), new Constants.StatusListener() {
+                    @Override
+                    public void onSuccess() {
+                        logger.d("Update user " + acct.getDisplayName() + " display name successfully!");
+                    }
+                });
+                final String userAvatar = acct.getPhotoUrl() != null ?  acct.getPhotoUrl().toString() : "";
+                logger.d("Try to load user avatar " + userAvatar);
+                if (userAvatar.length() > 0) {
+                    ImageLoader.getInstance().loadImage(userAvatar, new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            JSONObject attributes = new JSONObject();
+                            try {
+                                attributes.put("avatar", getBase64FromBitmap(loadedImage));
+                                attributes.put("avatar_url", userAvatar);
+                            } catch (JSONException ignored) {
+                                // whatever?
+                            }
+                            userInfo.setAttributes(attributes, new Constants.StatusListener() {
+                                @Override
+                                public void onSuccess() {
+                                    logger.d("Update user " + acct.getPhotoUrl() + " avatar successfully!");
+                                }
+                            });
+                            super.onLoadingComplete(imageUri, view, loadedImage);
+                        }
+                    });
+                }
+            } else {
+                logger.e("No user found");
+            }
+        }
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
         Intent intent = new Intent(this, ChannelActivity.class);
         startActivity(intent);
+
         this.finish();
+    }
+
+    public String getBase64FromBitmap(Bitmap bitmap)
+    {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+        String string = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
+        // int    size = string.length();
+        return string;
     }
 
     @Override

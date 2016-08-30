@@ -11,27 +11,28 @@
     <string name="conversation">Conversation</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_channel">ChannelActivity</string>
+    <string name="title_activity_channel">Chat group</string>
     <string name="title_activity_message">MessageActivity</string>
     <string name="title_update_friendly_name">Enter a friendly name</string>
     <string name="title_update_topic">Enter a topic</string>
-     <string name="title_update_message">Update message</string>
+    <string name="title_update_message">Update message</string>
     <string name="title_add_channel_name">Channel Friendly Name</string>
     <string name="title_invite_member">Invite member</string>
     <string name="title_add_member">Add member</string>
-     <string name="title_search_channel_unique_name">Search Channel by Unique Name</string>
+    <string name="title_search_channel_unique_name">Search Channel by Unique Name</string>
     <string name="title_remove_member">Remove member</string>
     <string name="type_message">Type message</string>
     <string name="OK">OK</string>
-     <string name="Options">Options</string>
+    <string name="Options">Options</string>
     <string name="Create_public_channel">Create public channel</string>
     <string name="Create_private_channel">Create private channel</string>
     <string name="RegId">Reg Id:</string>
     <string name="gcm">GCM</string>
+    <string name="create_group">Create group</string>
     <string name="unregister_gcm">Unregister GCM Token</string>
     <string name="Create_public_channel_withOption">Create Pub Ch with Options</string>
     <string name="Create_private_channel_withOption">Create Pri Ch with Options</string>
-     <string name="Search_channel_by_unique_name">Search channel by unique name</string>
+    <string name="Search_channel_by_unique_name">Search channel by unique name</string>
     <string name="about">About</string>
     <string name="user_info_activity">User info activity</string>
     <string name="title_update_attributes">Update message attributes</string>
@@ -43,4 +44,77 @@
     <string name="error_retrieving_access_token">Error retrieving access token from the server.</string>
 
     <string name="api_url">https://manadr-dev.appspot.com</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string-array name="list_preference_entries">
+        <item>Entry 1</item>
+        <item>Entry 2</item>
+        <item>Entry 3</item>
+    </string-array>
+
+    <string-array name="list_preference_entry_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="multi_select_list_preference_default_value" />
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
 </resources>

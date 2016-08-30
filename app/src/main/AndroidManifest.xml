@@ -1,8 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mhealth.chat.demo">
 
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -22,53 +22,52 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
         <activity
             android:name=".LoginActivity"
-            android:label="@string/app_name"
-            android:noHistory="true">
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".ChannelActivity"
-            android:label="@string/title_activity_channel" >
-        </activity>
+            android:label="@string/title_activity_channel" />
         <activity
             android:name=".MessageActivity"
             android:label="@string/title_activity_message"
-            android:launchMode="singleTop" >
-        </activity>
-
+            android:parentActivityName=".ChannelActivity"
+            android:launchMode="singleTop" />
         <activity
             android:name=".UserInfoActivity"
             android:label="@string/user_info_activity"
-            android:screenOrientation="portrait"
-            android:launchMode="singleTop" >
-        </activity>
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
 
-        <service
-            android:name=".GCMListenerService">
+        <service android:name=".GCMListenerService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <service
-            android:name=".DemoInstanceIDListenerService">
+        <service android:name=".DemoInstanceIDListenerService">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
             </intent-filter>
         </service>
-
         <service
             android:name=".RegistrationIntentService"
-            android:exported="false">
-        </service>
+            android:exported="false" />
 
-        <!--<meta-data android:name="com.google.android.gms.version"-->
-    		<!--android:value="@integer/google_play_services_version" />-->
+        <!-- <meta-data android:name="com.google.android.gms.version" -->
+        <!-- android:value="@integer/google_play_services_version" /> -->
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings" />
+        <activity android:name=".AddGroupActivity"
+            android:parentActivityName=".ChannelActivity"
+            android:label="Add new group"/>
     </application>
+
 </manifest>
