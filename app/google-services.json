@@ -1,0 +1,148 @@
+{
+  "project_info": {
+    "project_number": "1065243456785",
+    "firebase_url": "https://test-project-40271.firebaseio.com",
+    "project_id": "test-project-40271",
+    "storage_bucket": "test-project-40271.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065243456785:android:62a4ad0438a4458e",
+        "android_client_info": {
+          "package_name": "com.innovatube.manadr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1065243456785-75pl48blsvqm874luud9magavdqu7sid.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.innovatube.manadr",
+            "certificate_hash": "4A49F6013665E8C300BB47A38FA07C48BE86F884"
+          }
+        },
+        {
+          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065243456785:android:e0288e11377e3640",
+        "android_client_info": {
+          "package_name": "com.twilio.conversations.quickstart"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065243456785:android:75524af16f2465fb",
+        "android_client_info": {
+          "package_name": "com.twilio.ipmessaging.demo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065243456785:android:4650d77c87ae937f",
+        "android_client_info": {
+          "package_name": "com.mhealth.chat.demo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,64 @@
+apply plugin: 'com.android.application'
+
+def ACCESS_TOKEN_SERVICE_URL = project.hasProperty('ACCESS_TOKEN_SERVICE_URL') ? "\""+project.getProperty('ACCESS_TOKEN_SERVICE_URL')+"\"" : "\"https://147f3c03.ngrok.io/token_ipm.php\""
+
+dependencies {
+    compile 'com.android.support:support-v4:24.2.0'
+    compile 'com.android.support:appcompat-v7:24.2.0'
+    compile 'com.android.support:design:24.2.0'
+    compile 'uk.co.ribot:easyadapter:1.5.0@aar'
+    compile 'com.twilio:ip-messaging-android:0.9.1'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
+    compile 'com.koushikdutta.ion:ion:2.1.7'
+    compile 'com.twilio:conversations-android:0.12.2'
+    compile 'com.android.support:multidex:1.0.1'
+    compile 'org.greenrobot:eventbus:3.0.0'
+    compile "com.google.firebase:firebase-messaging:9.4.0"
+    compile 'com.google.android.gms:play-services-auth:9.4.0'
+}
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "24.0.2"
+
+    defaultConfig {
+        applicationId "com.mhealth.chat.demo"
+        minSdkVersion 19
+        targetSdkVersion 24
+        versionName "0.8"
+        multiDexEnabled true
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    signingConfigs {
+        testRelease {
+            storeFile file("../extra/keystore.jks")
+            storePassword "Pr1v4Tep455w0Rd"
+            keyAlias "manadr"
+            keyPassword "Pr1v4Tep455w0Rd"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            buildConfigField "String", "ACCESS_TOKEN_SERVICE_URL", ACCESS_TOKEN_SERVICE_URL
+            signingConfig signingConfigs.testRelease
+        }
+        debug {
+            versionNameSuffix "-debug"
+            buildConfigField "String", "ACCESS_TOKEN_SERVICE_URL", ACCESS_TOKEN_SERVICE_URL
+            signingConfig signingConfigs.testRelease
+        }
+    }
+}
+
+// Keep an eye on SDK deprecations
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xdiags:verbose"
+}
+
+apply plugin: 'com.google.gms.google-services'
