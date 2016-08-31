@@ -104,9 +104,6 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     private ArrayList<MessageItem> messageItemList;
     private String                 identity;
 
-    private View viewVideo;
-    private View viewChat;
-
     @Bind(R.id.toolbar)
     Toolbar toolbar;
 
@@ -141,8 +138,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
 
     @Subscribe
     public void onHangup(HangupEvent event) {
-        viewChat.setVisibility(View.VISIBLE);
-        viewVideo.setVisibility(View.GONE);
+
     }
 
     private void createUI()
@@ -152,8 +148,6 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("");
-        viewVideo = findViewById(R.id.videoLayout);
-        viewChat = findViewById(R.id.chat);
         if (getIntent() != null) {
             BasicIPMessagingClient basicClient = MainApplication.get().getBasicClient();
             identity = basicClient.getIpMessagingClient().getMyUserInfo().getIdentity();
@@ -202,7 +196,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
-        getMenuInflater().inflate(R.menu.message, menu);
+        getMenuInflater().inflate(R.menu.group, menu);
         return true;
     }
 
@@ -210,6 +204,11 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public boolean onOptionsItemSelected(MenuItem item)
     {
         switch (item.getItemId()) {
+            case R.id.action_info:
+                Intent intent = new Intent(this, ChannelDetailActivity.class);
+                intent.putExtra(Channel.class.getName(), channel);
+                startActivityForResult(intent, ActivityResultCommon.ACTION_EDIT_GROUP);
+                break;
             case R.id.action_settings: showChannelSettingsDialog(); break;
         }
         return super.onOptionsItemSelected(item);
@@ -880,7 +879,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMessageChange(Message message)
     {
         if (message != null) {
-            showToast(message.getSid() + " changed");
+            //showToast(message.getSid() + " changed");
             logger.d("Received onMessageChange for message sid|" + message.getSid() + "|");
         } else {
             logger.d("Received onMessageChange");
@@ -891,7 +890,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMessageDelete(Message message)
     {
         if (message != null) {
-            showToast(message.getSid() + " deleted");
+            //showToast(message.getSid() + " deleted");
             logger.d("Received onMessageDelete for message sid|" + message.getSid() + "|");
         } else {
             logger.d("Received onMessageDelete.");
@@ -902,7 +901,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberJoin(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " joined");
+            //showToast(member.getUserInfo().getIdentity() + " joined");
         }
     }
 
@@ -910,7 +909,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberChange(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " changed");
+            //showToast(member.getUserInfo().getIdentity() + " changed");
         }
     }
 
@@ -918,7 +917,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberDelete(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " deleted");
+            //showToast(member.getUserInfo().getIdentity() + " deleted");
         }
     }
 
@@ -1000,8 +999,18 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
 
     @Subscribe
     public void onCallEvent(CallEvent event) {
-        viewVideo.setVisibility(View.VISIBLE);
-        viewChat.setVisibility(View.GONE);
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ActivityResultCommon.ACTION_EDIT_GROUP) {
+            if (resultCode == ActivityResultCommon.RESULT_LEAVE_GROUP
+                    || resultCode == ActivityResultCommon.RESULT_REMOVE_GROUP) {
+                this.finish();
+            }
+        }
     }
 
     public void doCall(String target) {

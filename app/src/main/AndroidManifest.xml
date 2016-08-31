@@ -38,8 +38,8 @@
         <activity
             android:name=".MessageActivity"
             android:label="@string/title_activity_message"
-            android:parentActivityName=".ChannelActivity"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"
+            android:parentActivityName=".ChannelActivity" />
         <activity
             android:name=".UserInfoActivity"
             android:label="@string/user_info_activity"
@@ -65,9 +65,12 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
-        <activity android:name=".AddGroupActivity"
-            android:parentActivityName=".ChannelActivity"
-            android:label="Add new group"/>
+        <activity
+            android:name=".AddGroupActivity"
+            android:label="Add new group"
+            android:parentActivityName=".ChannelActivity" />
+        <activity android:name=".ChannelDetailActivity"
+            android:parentActivityName=".MessageActivity"/>
     </application>
 
 </manifest>

@@ -91,6 +91,8 @@ public class ChannelFragment extends Fragment implements ChannelListener {
         switch (event.getAction()) {
             case GROUP_ADDED:
             case CHANNELS_UPDATED:
+            case GROUP_LEAVED:
+            case GROUP_REMOVED:
                 getChannels();
                 break;
         }
@@ -206,6 +208,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                     }
                 });
         listView.setAdapter(adapter);
+        getChannels();
     }
 
     private void getChannels()
@@ -219,7 +222,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                 if (channelArray != null && channelArray.length > 0) {
                     for (final Channel channel : channelArray) {
                         if (channel.getType() == getChannelType()) {
-                            channelList.add(channel);
+                            channelList.add(channelsObject.getChannel(channel.getSid()));
                         }
                     }
                     Collections.sort(channelList, new CustomChannelComparator());

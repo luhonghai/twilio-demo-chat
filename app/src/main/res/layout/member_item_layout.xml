@@ -1,17 +1,83 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="250dp"
-    android:layout_height="match_parent"
-    android:orientation="vertical" >
-
-    <TextView
-        android:id="@+id/identity"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    xmlns:card="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="2dp"
+    android:paddingTop="2dp">
+<android.support.v7.widget.CardView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/card_item"
+    >
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-    </TextView>
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        >
+        <RelativeLayout
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp">
+            <RelativeLayout
+                android:id="@+id/avatar_container"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_alignParentTop="true">
+                <com.facebook.drawee.view.SimpleDraweeView
+                    android:id="@+id/avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    fresco:roundingBorderColor="#d3d3d3"
+                    fresco:roundingBorderWidth="2dp"
+                    fresco:failureImage="@drawable/ic_contact"
+                    fresco:failureImageScaleType="fitCenter"
+                    fresco:roundAsCircle="true" />
+                <com.facebook.drawee.view.SimpleDraweeView
+                    android:id="@+id/reachability"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true"
+                    fresco:failureImageScaleType="centerCrop"
+                    fresco:roundAsCircle="true"
+                    fresco:roundingBorderColor="@android:color/white"
+                    fresco:roundingBorderWidth="2dp"/>
+            </RelativeLayout>
+            <TextView
+                android:id="@+id/txt_name"
+                android:layout_centerInParent="true"
+                android:layout_toEndOf="@id/avatar_container"
+                android:layout_width="wrap_content"
+                android:text="Dr. Calumn Scott"
+                android:layout_marginStart="8dp"
+                android:layout_height="wrap_content" />
+            <android.support.v7.widget.CardView
+                android:id="@+id/view_admin"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                card:cardCornerRadius="5dp"
+                android:layout_marginStart="15dp"
+                android:layout_centerInParent="true"
+                android:layout_toEndOf="@id/txt_name"
+                card:elevation="0dp"
+                fresco:cardBackgroundColor="@color/colorPrimary">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Admin"
+                    android:textSize="10sp"
 
-    <TextView
-        android:id="@+id/member_sid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+                    android:layout_margin="6dp"
+                    android:textColor="@android:color/white"
+                    />
+            </android.support.v7.widget.CardView>
+        </RelativeLayout>
+    </LinearLayout>
+</android.support.v7.widget.CardView>
+</RelativeLayout>

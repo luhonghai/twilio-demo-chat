@@ -55,12 +55,10 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
     {
         friendlyName.setText(channel.getFriendlyName());
         try {
-
             String icon = "";
             try {
                 icon = channel.getAttributes().opt("group_icon").toString();
             } catch (Exception e) {
-                e.printStackTrace();
             }
             if (icon != null && icon.length() > 0) {
                 ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
@@ -68,6 +66,14 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
         } catch (Exception e) {
             e.printStackTrace();
         }
+        int color;
+        if (channel.getStatus() == ChannelStatus.JOINED) {
+            color = getContext().getResources().getColor(R.color.colorPrimary);
+        } else {
+            color = getContext().getResources().getColor(R.color.colorGray);
+        }
+        imageView.setColorFilter(color);
+        friendlyName.setTextColor(color);
     }
 
     public interface OnChannelClickListener {

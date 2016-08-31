@@ -36,16 +36,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
                     <RelativeLayout
-                        android:id="@+id/videoLayout"
-                        android:visibility="gone"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                        <fragment android:name="com.mhealth.chat.demo.ConversationFragment"
-                            android:id="@+id/video"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
-                    </RelativeLayout>
-                    <RelativeLayout
                         android:id="@+id/chat"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">

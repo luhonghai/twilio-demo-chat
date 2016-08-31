@@ -127,6 +127,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
 
     private void setListener()
     {
+        if (chatClient.getIpMessagingClient() == null) return;
         chatClient.getIpMessagingClient().setListener(new IPMessagingClientListener() {
             @Override
             public void onChannelAdd(Channel channel)
@@ -285,7 +286,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         switch (item.getItemId()) {
             case R.id.action_add:
                 Intent intent = new Intent(this, AddGroupActivity.class);
-                startActivityForResult(intent, ActivityResultCommon.ADD_GROUP);
+                startActivityForResult(intent, ActivityResultCommon.ACTION_ADD_GROUP);
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -398,6 +399,8 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
 
     private void doLogout() {
         new UserPreference(this).setAccessToken("");
+        if (chatClient != null && chatClient.getIpMessagingClient() != null)
+            //chatClient.getIpMessagingClient().shutdown();
         Auth.GoogleSignInApi.signOut(mGoogleApiClient);
         Intent intent = new Intent(this, LoginActivity.class);
         startActivity(intent);
@@ -407,7 +410,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
     MaterialDialog mLogoutDialog;
     private void logout() {
         mLogoutDialog = new MaterialDialog.Builder(this)
-                .title("Do you ready want to logout?")
+                .title("Do you really want to logout?")
                 .positiveText("Logout")
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
