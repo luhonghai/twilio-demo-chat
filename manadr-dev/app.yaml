@@ -1,0 +1,32 @@
+application: manadr-dev
+version: 1
+runtime: php55
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+
+- url: /index\.css
+  static_files: index.css
+  upload: index\.css
+
+- url: /
+  static_files: index.html
+  upload: index\.html
+
+- url: /video_chat_demo\.apk
+  static_files: video_chat_demo.apk
+  upload: video_chat_demo\.apk
+
+- url: /index\.js
+  static_files: index.js
+  upload: index\.js
+
+- url: /token_ipm\.php
+  script: token_ipm.php
+
+- url: /token\.php
+  script: token.php

@@ -1,0 +1,1591 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: MaNaDr Appointment V1 API
+  description: MaNaDr Appointment V1 API
+host: '104.215.250.97:8000'
+basePath: /api/v1
+schemes:
+  - http
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /request-phone-verification:
+    post:
+      description: 
+        Verify phone number by sending OTP for signup and signin.
+      operationId: 
+        verifyPhoneNumber
+      tags:
+        - Login
+        - Account
+      parameters:
+        - 
+          name: phone_country_code
+          in: formData
+          description: Account's phone number country code
+          required: true
+          type: string
+        - 
+          name: phone_number
+          in: formData
+          description: Account's phone number
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error, invalid OTP
+          schema:
+            $ref: '#/definitions/Error'
+  /verify-phone:
+    post:
+      description: 
+        Account Login
+      operationId: 
+        accountSignIn
+      parameters:
+        - 
+          name: phone_country_code
+          in: formData
+          description: Account's phone number country code
+          required: true
+          type: string
+        - 
+          name: phone_number
+          in: formData
+          description: Account's phone number
+          required: true
+          type: string
+        - 
+          name: otp
+          in: formData
+          description: The OTP sending via sms to account phone number.
+          required: true
+          type: string
+      tags:
+        - Login
+      responses:
+        '200':
+          description:
+            Login succesfully
+          schema:
+            $ref: '#/definitions/Account'
+        '400':
+          description: Login failed or unexpected error happen. And return detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /signout:
+    post:
+      description: 
+        Logout of the application.
+      operationId: 
+        signout
+      parameters: []
+      tags:
+        - Login
+      responses:
+        '200':
+          description: Logout sucessfully
+          schema:
+            $ref: '#/definitions/Status'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/profile:
+    post:
+      security:
+        - Bearer: []
+      description: 
+        Register new account
+      operationId: 
+        accountSignUp
+      parameters:
+        - 
+          name: phone_country_code
+          in: formData
+          description: Account's phone number country code
+          required: true
+          type: string
+        - 
+          name: phone_number
+          in: formData
+          description: account's phone number
+          required: true
+          type: string
+        - 
+          name: firstname
+          in: formData
+          description: account's firstname
+          required: true
+          type: string
+        - 
+          name: lastname
+          in: formData
+          description: account's lastname
+          required: true
+          type: string
+        - 
+          name: email
+          in: formData
+          description: account's email
+          required: false
+          type: string
+        - 
+          name: avatar_image
+          in: formData
+          description: account's avatar image
+          required: false
+          type: string
+          format: binary
+      tags:
+        - Login
+      responses:
+        '201':
+          description: Register new account sucessfully and return the account detail information
+          schema:
+            $ref: '#/definitions/Account'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+    get:
+      security:
+        - Bearer: []
+      description: 
+        Get account's information
+      operationId: 
+        getAccountInfo
+      parameters: []
+      tags:
+        - Account
+        - Me
+      responses:
+        '200':
+          description: Get account's information succesfully
+          schema:
+            $ref: '#/definitions/Account'
+        '400':
+          description: Error and details error message
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      security:
+        - Bearer: []
+      description: 
+        Update account information
+      operationId: 
+        updateAccountInfo
+      parameters:
+        - 
+          name: email
+          in: formData
+          description: Email address
+          required: false
+          type: string
+          format: email
+        - 
+          name: phone_number
+          in: formData
+          description: Telephone number
+          required: false
+          type: string
+        - 
+          name: lastname
+          in: formData
+          description: Lastname
+          required: false
+          type: string
+        - 
+          name: firstname
+          in: formData
+          description: Firstname
+          required: false
+          type: string
+        - 
+          name: gender
+          in: formData
+          description: Gender
+          required: false
+          type: string
+        - 
+          name: date_of_birth
+          in: formData
+          description: Date Of Birth
+          required: false
+          type: string
+          format: date
+      tags:
+        - Account
+        - Me
+      responses:
+        '200':
+          description: Update successfully
+          schema:
+            $ref: '#/definitions/Account'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /me/patients:
+    get:
+      security:
+        - Bearer: []
+      description: 
+        Get account's family and friend members
+      operationId: 
+        getMePatients
+      parameters: []
+      tags:
+        - Patient
+        - Me
+      responses:
+        '200':
+          description: Get account's family and friend member sucessfully
+          schema:
+            $ref: '#/definitions/Patients'
+        '400':
+          description: Error and details error message
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      security:
+        - Bearer: []
+      description: 
+        Add new patient for the account
+      operationId: 
+        addMePatient
+      parameters:
+        - 
+          name: firstname
+          in: formData
+          description: First name
+          required: true
+          type: string
+        - 
+          name: lastname
+          in: formData
+          description: Last name
+          required: true
+          type: string
+        - 
+          name: email
+          in: formData
+          description: Email address
+          required: true
+          type: string
+          format: email
+        - 
+          name: date_of_birth
+          in: formData
+          description: Date of birth
+          required: true
+          type: string
+          format: date
+        - 
+          name: phone_number
+          in: formData
+          description: Phone number
+          required: false
+          type: string
+        -
+          name: phone_country_code
+          in: formData
+          description: Phone country code
+          required: false
+          type: string
+        -
+          name: address_city
+          in: formData
+          description: Patient Address
+          required: true
+          type: string
+        -
+          name: relationship_id
+          in: formData
+          description: Relationship ID of the account
+          required: true
+          type: integer
+        -
+          name: gender
+          in: formData
+          description: Gender of patient
+          required: false
+          type: string
+      tags:
+        - Patient
+        - Me
+      responses:
+        '201':
+          description: Add new patient sucessfully
+          schema:
+            $ref: '#/definitions/Patient'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /me/patients/{id}:
+    delete:
+      security:
+        - Bearer: []
+      description: 
+        Delete a patient
+      operationId: 
+        deleteMePatient
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Patient ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Me
+        - Patient
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      security:
+        - Bearer: []
+      description: 
+        Update the patient information
+      operationId: 
+        updateMePatient
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Patient ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: firstname
+          in: formData
+          description: First name
+          required: true
+          type: string
+        - 
+          name: lastname
+          in: formData
+          description: Last name
+          required: true
+          type: string
+        - 
+          name: email
+          in: formData
+          description: Email address
+          required: true
+          type: string
+          format: email
+        - 
+          name: date_of_birth
+          in: formData
+          description: Date of birth
+          required: true
+          type: string
+          format: date
+        - 
+          name: phone_number
+          in: formData
+          description: Phone number
+          required: true
+          type: string
+        - 
+          name: address
+          in: formData
+          description: Patient Address
+          required: true
+          type: string
+        - 
+          name: relationship
+          in: formData
+          description: Relationship with the account
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Patient'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Error'
+  /me/doctors:
+    get:
+      security:
+        - Bearer: []
+      description: 
+        Get all the doctors that user mark as favourite or visited. The favourite doctors will list first then to the visited doctors.
+      operationId: 
+        getMeDoctors
+      parameters:
+        - 
+          name: name
+          in: query
+          description: the input search text conditions that the api will perform search by doctor's name. if not specified then search all
+          required: false
+          type: string
+        - 
+          name: title
+          in: query
+          description: the doctor title to be filtered (All, Doctor, Dentist, Specialist). If not specified then using filter all
+          required: false
+          type: string
+      tags:
+        - Doctor
+        - Me
+        - Search
+      responses:
+        '200':
+          description: Return list of favourite/visited doctor information
+          schema:
+            $ref: '#/definitions/Doctors'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /me/doctors/{id}/favourite:
+    post:
+      security:
+        - Bearer: []
+      description: 
+        Add a doctor as favourite
+      operationId: 
+        avouriteMeDoctor
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Doctor ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Me
+        - Doctor
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/doctors/{id}/stars/{rate}:
+    post:
+      security:
+        - Bearer: []
+      description: 
+        User make a rate for the doctor
+      operationId: 
+        rateMeDoctor
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Doctor ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: rate
+          in: path
+          description: the rate point that user vote for the doctor
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - Me
+        - Doctor
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/bookings:
+    get:
+      security:
+        - Bearer: []
+      description: 
+        Get all the account's booking appointments (booking/confirmed/past booking/cancelled)
+      operationId: 
+        getMeBookingAppointment
+      parameters: []
+      tags:
+        - Me
+        - Appointment
+        - Booking
+      responses:
+        '200':
+          description: A list of account's appointments (Confirmed, Booking, Past Booking, Cancelled Booking)
+          schema:
+            $ref: '#/definitions/Bookings'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      security:
+        - Bearer: []
+      description: 
+        New appointment booking
+      operationId: 
+        postMeBooking
+      parameters:
+        - 
+          name: patient_id
+          in: formData
+          description: Patient ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: doctor_timetable_id
+          in: formData
+          description: Doctor Timetable Slot (Time, Doctor, Clinic)
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: appointment_type_id
+          in: formData
+          description: Appointment Type
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Me
+        - Appointment
+        - Booking
+      responses:
+        '201':
+          description: create new appointment sucessfully
+          schema:
+            $ref: '#/definitions/Appointment'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/bookings/{id}:
+    put:
+      security:
+        - Bearer: []
+      description: 
+        re-schedule/cancel the booking appointment with the doctor
+      operationId: 
+        updateMeBooking
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Appointment ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: doctor_timetable_id
+          in: formData
+          description: Doctor Timetable Slot (Time, Doctor, Clinic)
+          required: false
+          type: integer
+          format: int64
+        - 
+          name: status
+          in: formData
+          description: cancel booking status
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Me
+        - Appointment
+        - Booking
+      responses:
+        200:
+          description: OK and return updated appointment
+          schema:
+            $ref: '#/definitions/Appointment'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Error'
+  /me/bookings/{id}/verify:
+    post:
+      security:
+        - Bearer: []
+      description: 
+        Verify booking by sending and checking the token via SMS
+      operationId: 
+        verifyMeBooking
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Booking ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: token
+          in: formData
+          description: the token using to verify the booking
+          required: true
+          type: string
+      tags:
+        - Me
+        - Booking
+        - Appointment
+      responses:
+        200:
+          description: Verify sucessfully and return the booking formation
+          schema:
+            $ref: '#/definitions/Appointment'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/payments:
+    get:
+      security:
+        - Bearer: []
+      description: Get all the list of user credit card payments
+      operationId: getMePayments
+      parameters: []
+      tags:
+        - Me
+        - Payment
+      responses:
+        200:
+          description: OK and return a list of user's payment
+          schema:
+            $ref: '#/definitions/Payments'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      security:
+        - Bearer: []
+      description: Add new credit card payment for the user
+      operationId: addMePayment
+      parameters:
+        - 
+          name: number
+          in: formData
+          description: user's credit card number (XXXX-XXXX-XXXX-XXXX)
+          required: true
+          type: string
+        - 
+          name: exprired_at
+          in: formData
+          description: user's credit card expired date (MM/YYYY)
+          required: true
+          type: string
+          format: date
+        - 
+          name: cvv
+          in: formData
+          description: user's credit card cvv (XXX)
+          required: true
+          type: string
+        - 
+          name: is_primary
+          in: formData
+          description: is the credit card primary payment?
+          required: false
+          type: boolean
+      tags:
+        - Me
+        - Payment
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Payment'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/payments/{id}:
+    get:
+      security:
+        - Bearer: []
+      description: Get the detail information of the payment
+      operationId: getMePayment
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Payment ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Me
+        - Payment
+      responses:
+        200:
+          description: OK and return the detail information of the payment
+          schema:
+            $ref: '#/definitions/Payment'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      security:
+        - Bearer: []
+      description: Update user selected payment
+      operationId: updateMePayment
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Payment ID
+          required: true
+          type: integer
+          format: int64
+        - 
+          name: number
+          in: formData
+          description: user's credit card number (XXXX-XXXX-XXXX-XXXX)
+          required: true
+          type: string
+        - 
+          name: exprired_at
+          in: formData
+          description: user's credit card expired date (MM/YYYY)
+          required: true
+          type: string
+          format: date
+        - 
+          name: cvv
+          in: formData
+          description: user's credit card cvv (XXX)
+          required: true
+          type: string
+        - 
+          name: is_primary
+          in: formData
+          description: is the credit card primary payment?
+          required: false
+          type: boolean
+      responses:
+        200:
+          description: OK and return the new payment
+          schema:
+            $ref: '#/definitions/Payment'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      security:
+        - Bearer: []
+      description: Delete a selected payment
+      operationId: deleteMePayment
+      parameters:
+        - 
+          name: id
+          in: path
+          description: Payment ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Me
+        - Payment
+      responses:
+        200:
+          description: OK, delete payment succesfully
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/alerts:
+    get:
+      security:
+        - Bearer: []
+      description: Get all the alerts (Attension, Reminder, News and Promtions) for the login account
+      operationId: getMeAlert
+      parameters: []
+      tags:
+        - Me
+        - Alert
+      responses:
+        200:
+          description: OK and return list of user's alerts
+          schema:
+            $ref: '#/definitions/Alerts'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /me/alerts/{id}/ack:
+    post:
+      security:
+        - Bearer: []
+      description: Action to acknowlegde the alert then the system will not notify the alert anymore.
+      operationId: ackMeAlert
+      parameters:
+        - name: id
+          in: path
+          description: Alert ID
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Status'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /doctors:
+    get:
+      security:
+        - Bearer: []
+      description: Get suggestion nearby doctor to the current user location
+      operationId: getNearbyDoctors
+      parameters:
+        - name: offset
+          in: query
+          description: offset to get the data, default value is 0
+          required: false
+          type: integer
+        - name: limit
+          in: query
+          description: limit the get the data, default value is 10
+          required: false
+          type: integer
+        - name: longitude
+          in: query
+          description: user current location's longitude
+          required: false
+          type: number
+          format: double
+        - name: latitude
+          in: query
+          description: user current location's latitude
+          required: false
+          type: number
+          format: double
+        - name: name
+          in: query
+          description: input text to full search by doctor's name
+          required: false
+          type: string
+        - name: title
+          in: query
+          description: input title of doctor to be filterd (0 - All, 1 - Doctor, 2 - Dentist, 3 - Specialist), default value is 0
+          required: false
+          type: integer
+      tags:
+        - Doctor
+        - Search
+      responses:
+        200:
+          description: Return the list of nearby doctors
+          schema:
+            $ref: '#/definitions/Doctors'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /doctors/{id}:
+    get:
+      security:
+        - Bearer: []
+      description: Get doctor's detail information to display on profile screen
+      operationId: getDoctor
+      parameters:
+        - name: id
+          in: path
+          description: Doctor ID
+          required: true
+          type: integer
+          format: int64
+        - name: user_id
+          in: query
+          description: user id (to display the favourite and star rating of the user to the doctor)
+          required: false
+          type: integer
+          format: int64
+      tags:
+        - Doctor
+      responses:
+        '200':
+          description: Get and return doctor's information sucessfully
+          schema:
+            $ref: '#/definitions/Doctor'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /doctors/{doctor_id}/clinics/{clinic_id}/timetables:
+    get:
+      security:
+        - Bearer: []
+      description: Get the doctor's timetable of the specified clinic on selected months (previous, current, next) of the year.
+      operationId: getDoctorTimetables
+      parameters:
+        - name: doctor_id
+          in: path
+          description: Doctor ID
+          required: true
+          type: integer
+          format: int64
+        - name: clinic_id
+          in: path
+          description: Clinic ID
+          required: true
+          type: integer
+          format: int64
+        - name: date
+          in: query
+          description: the first date for the month of the year
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Booking
+        - Appointment
+        - Doctor
+        - Clinic
+      responses:
+        200:
+          description: OK, return the time slots of the doctor in the clinic on selected month (previous, current, next) of the year.
+          schema:
+            $ref: '#/definitions/Timetables'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /doctors/{id}/booking-fees:
+    get:
+      security:
+        - Bearer: []
+      description: Get booking fee for specific doctor and booking patient conditions
+      operationId: getDoctorBookingFee
+      parameters:
+        - name: id
+          in: path
+          description: Doctor ID
+          required: true
+          type: integer
+          format: int64
+        - name: patient_condition_id
+          in: query
+          description: Patient Condition ID
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - Booking
+        - Appointment
+        - Doctor
+        - Patient
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Fee'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /doctors/search:
+    get:
+      security:
+        - Bearer: []
+      description: Advanced ManaSearch - search doctors base on user input search conditions
+      operationId: searchDoctors
+      parameters:
+        - name: gender
+          in: formData
+          description: Doctor's gender
+          required: false
+          type: string
+        - name: name
+          in: formData
+          description: Doctor's name
+          required: false
+          type: string
+        - name: profession
+          in: formData
+          description: Doctor's profession
+          required: false
+          type: string
+        - name: location
+          in: formData
+          description: Doctor Clinic's location (addess, zip, city, country)
+          required: false
+          type: string
+      tags:
+        - Doctor
+        - Search
+      responses:
+        200:
+          description: OK and return list of matching search doctors
+          schema:
+            $ref: '#/definitions/Doctors'
+        400:
+          description: Error and return details error code/message
+          schema:
+            $ref: '#/definitions/Error'
+  /clinics/search:
+    get:
+      security:
+        - Bearer: []
+      description: Get all the clinics nearby the current user location (`lattitude`, `longitude`) to display the map when user login into the app. The nearby depends on the input `distance` parameter. The API will return all the clinics having the distance to user current location smaller than `distance`
+      operationId: getClinics
+      parameters:
+        - name: distance
+          in: query
+          description: the maximum distance of return clinics to current user location
+          required: true
+          type: number
+          format: float
+        - name: latitude
+          in: query
+          description: current user location's latitude
+          required: true
+          type: number
+          format: float
+        - name: longitude
+          in: query
+          description: current user location's longitue
+          required: true
+          type: number
+          format: float
+        - name: name
+          in: query
+          description: full text search by clinic name and clinic address
+          type: string
+      tags:
+        - Clinic
+        - Search
+      responses:
+        '200':
+          description: Get nearby clinics sucessfully
+          schema:
+            $ref: '#/definitions/Clinics'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /clinics/{id}:
+    get:
+      security:
+        - Bearer: []
+      description: Get Clinic detail information by Id to show on the map
+      operationId: getClinic
+      parameters:
+        - name: id
+          in: path
+          description: Clinic ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Clinic
+      responses:
+        '200':
+          description: Clinic detail information (display on the location map)
+          schema:
+            $ref: '#/definitions/Clinic'
+        '400':
+          description: Error and detail error message
+          schema:
+            $ref: '#/definitions/Error'
+  /clinics/{id}/doctors:
+    get:
+      security:
+        - Bearer: []
+      description: Get all the available appointment doctors belong to the Clinic
+      operationId: getDoctorsByClinic
+      parameters:
+        - name: id
+          in: path
+          description: Clinic ID
+          required: true
+          type: integer
+      tags:
+        - Doctor
+        - Clinic
+      responses:
+        '200':
+          description: Return a list of available appointment doctors belong to the clinic and some basic clinic information also.
+          schema:
+            $ref: '#/definitions/ClinicDoctors'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  /appointments/{id}:
+    get:
+      security:
+        - Bearer: []
+      description: Get appointment detail information
+      operationId: getAppointment
+      parameters:
+        - name: id
+          in: path
+          description: Appointment ID
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Appointment
+      responses:
+        '200':
+          description: Get appointment detail information sucessfully
+          schema:
+            $ref: '#/definitions/Appointment'
+        '400':
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Error'
+  /appointment-types:
+    get:
+      security:
+        - Bearer: []
+      description: Get all the appointment type
+      parameters: []
+      tags:
+        - Appointment
+        - Booking
+      responses:
+        200:
+          description: OK and return list of appointment types
+          schema:
+            $ref: '#/definitions/AppointmentTypes'
+        400:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  Error:
+    description: Display error message
+    type: object
+    required:
+      - status
+      - code
+      - message
+    properties:
+      status:
+        description: Success/Fail status, if Error then the status is set to false
+        type: boolean
+      code:
+        description: Error Code (4 digits number)
+        type: integer
+      message:
+        description: details error message relevant with the error code
+        type: string
+      parameters:
+        description: error message parameters
+        type: array
+        items:
+          type: string
+  Status:
+    type: object
+    required:
+      - status
+      - message
+    properties:
+      status:
+        description: status
+        type: boolean
+      message:
+        description: detail message content
+        type: string
+  Account:
+    description: Account's detail information
+    type: object
+    required:
+      - id
+      - phone_number
+    properties:
+      id:
+        description: Account ID
+        type: integer
+      lastname:
+        description: Account's last name
+        type: string
+      firstname:
+        description: Account's first name
+        type: string
+      email:
+        description: Account's email address
+        type: string
+        format: email
+      phone_number:
+        description: Account's telephone number
+        type: string
+      avatar_url:
+        description: Account's avatar image url
+        type: string
+      token:
+        description: Account's token
+        type: string
+  Patients:
+    description: List of Patient
+    type: array
+    items:
+      $ref: '#/definitions/Patient'
+  Patient:
+    description: Patient's detail information
+    type: object
+    required:
+      - id
+      - firstname
+      - lastname
+      - relationship
+    properties:
+      id:
+        description: Patient ID
+        type: integer
+      firstname:
+        description: Firstname
+        type: string
+      lastname:
+        description: Lastname
+        type: string
+      gender:
+        description: Gender
+        type: string
+      date_of_birth:
+        description: Date Of Birth
+        type: string
+        format: date
+      email:
+        description: email address
+        type: string
+        format: email
+      telephone:
+        description: Telephone number
+        type: string
+      relationship:
+        description: Patient relationship with main account
+        type: string
+      address:
+        description: Patient Address
+        type: string
+  Clinics:
+    description: List of clinic
+    type: array
+    items:
+      $ref: '#/definitions/Clinic'
+  Clinic:
+    description: Clinic detail information
+    type: object
+    required:
+      - id
+      - name
+    properties:
+      id:
+        description: Clinic ID
+        type: integer
+      name:
+        description: Clinic name
+        type: string
+      type:
+        description: Clinic type (dental, GP,...)
+        type: string
+      address:
+        description: Clinic address
+        type: string
+      zip:
+        description: Clinic's location zip code
+        type: string
+      city:
+        description: Clinic's location city
+        type: string
+      country:
+        description: Clinic's location country
+        type: string
+      primary:
+        description: The clinic is primary of a doctor or not
+        type: boolean
+      latitude:
+        description: Clinic location's latitude to display on the map
+        type: number
+        format: float
+      longitude:
+        description: Clinic location's longitude to display on the map
+        type: number
+        format: float
+      images:
+        description: All the images of the clinic
+        type: array
+        items:
+          type: string
+  ClinicDoctors:
+    description: Clinic infomation and the doctors that belong to the clinic
+    type: object
+    allOf:
+      - $ref: '#/definitions/Clinic'
+      - $ref: '#/definitions/Doctors'
+  Doctors:
+    description: List of doctors that match the search conditions
+    type: array
+    items:
+      $ref: '#/definitions/Doctor'
+  Doctor:
+    description: Doctor basic information
+    type: object
+    required:
+      - id
+      - name
+      - avatar_url
+      - title
+    properties:
+      id:
+        description: Doctor ID
+        type: integer
+      name:
+        description: Doctor name
+        type: string
+      email:
+        description: Doctor's email address
+        type: string
+      avatar_url:
+        description: Doctor avatar image url
+        type: string
+      title:
+        description: Doctor title (Doctor, Dentist, Specialist)
+        type: string
+      title_icon_url:
+        description: Doctor icon titles
+        type: string
+      available_time:
+        #description: Doctor nearest available appointment datetime on a selected clinic
+        $ref: '#/definitions/Timetable'
+      favourite:
+        description: To mark the doctor is favourite by current authenticated account or not
+        type: boolean
+      star:
+        description: The doctor's average star
+        type: number
+        format: float
+      clinics:
+        description: Doctor's clinic
+        type: array
+        items:
+          $ref: '#/definitions/Clinic'
+  Timetables:
+    description: The list of duration time that doctor will be available in a specified date on the clinic
+    type: array
+    items:
+      $ref: '#/definitions/Timetable'
+  Timetable:
+    description: A duration time slot at that doctor will be available
+    type: object
+    required:
+      - id
+      - start_time
+      - end_time
+    properties:
+      id:
+        description: Doctor Timetable ID
+        type: integer
+        format: int64
+      start_time:
+        description: start time of the duration
+        type: string
+        format: datetime
+      end_time:
+        description: end time of the duration
+        type: string
+        format: datetime
+      clinic_id:
+        description: clinic id of the clinic at which doctor have available time
+        type: integer
+        format: int64
+      clinic_name:
+        description: clinic name of the clinic at which doctor have available time
+        type: string
+  Booking:
+    description: The basic booking information to display on the [My Booking]
+    type: object
+    required:
+      - appointment_id
+      - appointment_status
+      - appointment_datetime
+      - doctor_name
+      - doctor_avatar_url
+    properties:
+      appointment_id:
+        description: Appointment ID
+        type: integer
+        format: int64
+      appointment_status:
+        description: Appointment Status
+        type: string
+      appointment_datetime:
+        description: Appointment start time with date
+        type: string
+        format: datetime
+      doctor_name:
+        description: Doctor Name
+        type: string
+      doctor_avatar_url:
+        description: Doctor avatar url
+        type: string
+      notification:
+        description: notification text with the number of days from today to the appointment start datetime
+        type: string
+  Bookings:
+    description: list of basic booking information to display on the [My Booking]
+    type: array
+    items:
+      $ref: '#/definitions/Booking'
+  Appointment:
+    description: details booking appointment information
+    type: object
+    allOf:
+      - $ref: '#/definitions/Doctor'
+      - $ref: '#/definitions/Clinic'
+      - $ref: '#/definitions/Timetable'
+      - $ref: '#/definitions/Patient'
+      - required:
+          - appointment_type
+          - reason
+          - status
+        properties:
+          appointment_type:
+            description: Appointment Type
+            type: string
+          reason:
+            description: The reason why need to visit the doctor
+            type: string
+          status:
+            description: Appointment status
+            type: string
+          notification:
+            description: notification text with the number of days left from today to the appointment date
+  AppointmentType:
+    description: Appointment Type when making an appointment with the doctor
+    type: object
+    required:
+      - id
+      - name
+    properties:
+      id:
+        description: Appointment Type ID
+        type: integer
+        format: int32
+      name:
+        description: Appointment Type Name
+        type: string
+  AppointmentTypes:
+    description: list of all appointment types
+    type: array
+    items:
+      $ref: '#/definitions/AppointmentType'
+  Alerts:
+    description: list of all user alert
+    type: array
+    items:
+      $ref: '#/definitions/Alert'
+  Alert:
+    description: Alert Information
+    type: object
+    required:
+      - id
+      - text
+      - alert_category
+    properties:
+      id:
+        description: Alert ID
+        type: integer
+        format: int64
+      text:
+        description: text to represent all the content of the alert
+        type: string
+      alert_category:
+        description: Alert categories (Attention, Reminder, News, Promotion)
+        type: integer
+        format: int32
+  Payments:
+    description: list of user's payments
+    type: array
+    items:
+      $ref: '#/definitions/Payment'
+  Payment:
+    description: user credit card payment information
+    type: object
+    required:
+      - card_id
+      - card_number
+      - expired_at
+      - cvv
+    properties:
+      card_id:
+        description: Card ID
+        type: string
+      card_number:
+        description: Last 4 credit card number (XXXX-XXXX-XXXX-1234)
+        type: string
+      expired_at:
+        description: date that the credit card valid to (YYYY/MM)
+        type: string
+        format: datetime
+      cvv:
+        description: cvv code of the credit card (XXX)
+        type: string
+      is_primary:
+        description: The flag to determind that the payment is primary or not
+        type: boolean
+  Fee:
+    description: Booking fee
+    type: object
+    properties:
+      id:
+        type: string

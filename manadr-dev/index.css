@@ -1,0 +1,112 @@
+* {
+  box-sizing:border-box;
+}
+
+a {
+  color: cyan;
+}
+
+html, body {
+  padding:0;
+  margin:0;
+  height:100%;
+  width:100%;
+  color:#dedede;
+  font-family: 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+header {
+  width:100%;
+  position:absolute;
+  text-align:center;
+  bottom:20px;
+}
+
+header a, header a:visited {
+  font-size:18px;
+  color:#dedede;
+  text-decoration:none;
+}
+
+header a:hover {
+  text-decoration:underline;
+}
+
+#mes-container {
+  background-color:#2B2B2A;
+}
+
+#mes-container input {
+  display:block;
+  height:52px;
+  width:800px;
+  margin:10px auto;
+  outline:none;
+  background-color:transparent;
+  border:none;
+  border-bottom:1px solid #2B2B2A;
+  padding:0;
+  font-size:42px;
+  color:#eee;
+}
+
+#messages {
+  background-color:#232323;
+  padding:10px;
+  width:800px;
+  margin:0 auto;
+  overflow-y:auto;
+  height: 110px;
+}
+
+#messages p {
+  margin:5px 0;
+  padding:0;
+}
+
+.info {
+  margin:5px 0;
+  font-style:italic;
+}
+
+.message-container {
+  margin:5px 0;
+  color:#fff;
+}
+
+.message-container .username {
+  display:inline-block;
+  margin-right:5px;
+  font-weight:bold;
+  color:#849091;
+}
+
+.me, .username.me {
+  font-weight:bold;
+  color:cyan;
+}
+
+.message-container .username.me {
+  display:inline-block;
+  margin-right:5px;
+}
+
+#controls {
+  overflow: hidden;
+}
+
+
+
+div#remote-media {
+  background: #272726 !important;
+}
+
+#container {
+  width: 100%;
+}
+
+#login-form {
+  margin: 200px auto;
+  overflow: hidden;
+  width: 200px;
+}

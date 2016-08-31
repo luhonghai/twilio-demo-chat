@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Twilio Video - Video Quickstart</title>
+  <link rel="stylesheet" href="//media.twiliocdn.com/sdk/quickstart/conversations-quickstart.min.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div><a href="https://drive.google.com/file/d/0B_ITHrAhCStANHhZVXY1RDB4dm8/view?usp=sharing">Download demo APK here!</a></div>
+  <div id="remote-media" style="display: none"></div>
+  <div id="controls" style="display: none">
+    <div id="preview">
+      <p class="instructions">Hello Beautiful</p>
+      <div id="local-media"></div>
+      <button id="button-preview">Preview My Camera</button>
+    </div>
+    <div id="invite-controls">
+      <p class="instructions">Invite another Video Client</p>
+      <input id="invite-to" type="text" placeholder="Identity to send an invite to" />
+      <button id="button-invite">Send Invite</button>
+    </div>
+    <div id="log">
+      <p>&gt;&nbsp;<span id="log-content">Preparing to listen</span>...</p>
+    </div>
+
+  </div><!-- /controls -->
+  <div id="mes-container"  style="display: none">
+    <div id="messages"></div>
+    <input id="chat-input" type="text" placeholder="say anything" autofocus/>
+  </div>
+  <div id="login-form">
+    <input id="txtUsername" type="text" placeholder="Enter username to login" />
+    <button id="btnLogin">Login</button>
+  </div>
+  <script type="text/javascript" src="//code.jquery.com/jquery-1.7.1.min.js"></script>
+  <script src="//media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script>
+  <script src="//media.twiliocdn.com/sdk/js/conversations/v0.13/twilio-conversations.min.js"></script>
+  <script src="//media.twiliocdn.com/sdk/rtc/js/ip-messaging/v0.10/twilio-ip-messaging.min.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
