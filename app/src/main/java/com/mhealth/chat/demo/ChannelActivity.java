@@ -33,6 +33,7 @@ import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.mhealth.chat.demo.data.UserPreference;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.Constants.StatusListener;
@@ -396,6 +397,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
     }
 
     private void doLogout() {
+        new UserPreference(this).setAccessToken("");
         Auth.GoogleSignInApi.signOut(mGoogleApiClient);
         Intent intent = new Intent(this, LoginActivity.class);
         startActivity(intent);

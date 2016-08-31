@@ -179,6 +179,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
+            new UserPreference(this).setAccessToken("");
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             handleSignInResult(result);
         }
