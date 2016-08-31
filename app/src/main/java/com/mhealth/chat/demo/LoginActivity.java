@@ -13,10 +13,8 @@ import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.gson.Gson;
 
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.mhealth.chat.demo.data.UserPreference;
 import com.twilio.ipmessaging.Constants;
-import com.twilio.ipmessaging.IPMessagingClient;
 import com.twilio.ipmessaging.UserInfo;
 
 import android.graphics.Bitmap;
@@ -25,10 +23,7 @@ import android.provider.Settings.Secure;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.IntentFilter;
@@ -37,13 +32,7 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Base64;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.Toast;
 import android.preference.PreferenceManager;
 
@@ -104,7 +93,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         };
         // Registering BroadcastReceiver
         registerReceiver();
-        chatClient = TwilioApplication.get().getBasicClient();
+        chatClient = MainApplication.get().getBasicClient();
         SignInButton signInButton = (SignInButton) findViewById(R.id.sign_in_button);
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setScopes(gso.getScopeArray());
@@ -121,6 +110,8 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
             startService(intent);
         }
     }
+
+
 
     private void loginTwilio(GoogleSignInAccount acct) {
         this.acct = acct;
@@ -153,6 +144,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         protected void onPostExecute(String result)
         {
             super.onPostExecute(result);
+
             LoginActivity.this.chatClient.doLogin(accessToken, LoginActivity.this, urlString);
         }
 
@@ -169,7 +161,11 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         {
             try {
                 urlString = params[0];
-                accessToken = new Gson().fromJson(HttpHelper.httpGet(params[0]), TokenData.class).getToken();
+                accessToken = new UserPreference(LoginActivity.this).getAccessToken();
+                if (accessToken.isEmpty()) {
+                    accessToken = new Gson().fromJson(HttpHelper.httpGet(params[0]), TokenData.class).getToken();
+                    new UserPreference(LoginActivity.this).setAccessToken(accessToken);
+                }
                 chatClient.setAccessToken(accessToken);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -256,23 +252,22 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
                 final String userAvatar = acct.getPhotoUrl() != null ?  acct.getPhotoUrl().toString() : "";
                 logger.d("Try to load user avatar " + userAvatar);
                 if (userAvatar.length() > 0) {
-                    ImageLoader.getInstance().loadImage(userAvatar, new SimpleImageLoadingListener() {
+                    JSONObject attributes = userInfo.getAttributes();
+                    if (attributes == null) {
+                        attributes = new JSONObject();
+                    }
+                    try {
+                        if (attributes.has("avatar_url")) {
+                            attributes.remove("avatar_url");
+                        }
+                        attributes.put("avatar_url", userAvatar);
+                    } catch (JSONException ignored) {
+                        // whatever?
+                    }
+                    userInfo.setAttributes(attributes, new Constants.StatusListener() {
                         @Override
-                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            JSONObject attributes = new JSONObject();
-                            try {
-                                attributes.put("avatar", getBase64FromBitmap(loadedImage));
-                                attributes.put("avatar_url", userAvatar);
-                            } catch (JSONException ignored) {
-                                // whatever?
-                            }
-                            userInfo.setAttributes(attributes, new Constants.StatusListener() {
-                                @Override
-                                public void onSuccess() {
-                                    logger.d("Update user " + acct.getPhotoUrl() + " avatar successfully!");
-                                }
-                            });
-                            super.onLoadingComplete(imageUri, view, loadedImage);
+                        public void onSuccess() {
+                            logger.d("Update user " + acct.getPhotoUrl() + " avatar successfully!");
                         }
                     });
                 }

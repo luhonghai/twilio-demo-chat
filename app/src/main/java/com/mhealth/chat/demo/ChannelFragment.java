@@ -20,11 +20,8 @@ import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Channels;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.ErrorInfo;
-import com.twilio.ipmessaging.IPMessagingClient;
-import com.twilio.ipmessaging.IPMessagingClientListener;
 import com.twilio.ipmessaging.Member;
 import com.twilio.ipmessaging.Message;
-import com.twilio.ipmessaging.UserInfo;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -41,7 +38,7 @@ import uk.co.ribot.easyadapter.EasyAdapter;
  * Created by luhonghai on 8/30/16.
  */
 
-public class ChannelFragment extends Fragment implements ChannelListener, IPMessagingClientListener {
+public class ChannelFragment extends Fragment implements ChannelListener {
 
     private static final Logger logger = Logger.getLogger(ChannelFragment.class);
 
@@ -75,9 +72,8 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_channel, container, false);
-        basicClient = TwilioApplication.get().getBasicClient();
+        basicClient = MainApplication.get().getBasicClient();
         if (basicClient != null && basicClient.getIpMessagingClient() != null) {
-            basicClient.getIpMessagingClient().setListener(this);
             setupListView(root);
         }
         EventBus.getDefault().register(this);
@@ -92,8 +88,11 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
 
     @Subscribe
     public void onActionEvent(ActionEvent event) {
-        if (event.getAction() == ActionEvent.Action.GROUP_ADDED) {
-            getChannels();
+        switch (event.getAction()) {
+            case GROUP_ADDED:
+            case CHANNELS_UPDATED:
+                getChannels();
+                break;
         }
     }
 
@@ -174,7 +173,7 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
                                                 @Override
                                                 public void onError(ErrorInfo errorInfo)
                                                 {
-                                                    TwilioApplication.get().logErrorInfo(
+                                                    MainApplication.get().logErrorInfo(
                                                             "failed to join channel", errorInfo);
                                                 }
 
@@ -190,6 +189,7 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
                                                         });
                                                     }
                                                     logger.d("Successfully joined channel");
+
                                                     Intent i =
                                                             new Intent(getActivity(), MessageActivity.class);
                                                     i.putExtra(Constants.EXTRA_CHANNEL,
@@ -206,8 +206,6 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
                     }
                 });
         listView.setAdapter(adapter);
-
-        getChannels();
     }
 
     private void getChannels()
@@ -259,7 +257,7 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
                                                         @Override
                                                         public void onError(ErrorInfo errorInfo)
                                                         {
-                                                            TwilioApplication.get().logErrorInfo(
+                                                            MainApplication.get().logErrorInfo(
                                                                     "Failed to join channel", errorInfo);
                                                         }
 
@@ -293,7 +291,7 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
                                                         @Override
                                                         public void onError(ErrorInfo errorInfo)
                                                         {
-                                                            TwilioApplication.get().logErrorInfo(
+                                                            MainApplication.get().logErrorInfo(
                                                                     "Failed to decline channel invite", errorInfo);
                                                         }
 
@@ -364,72 +362,6 @@ public class ChannelFragment extends Fragment implements ChannelListener, IPMess
         logger.e("Received onSynchronizationChange callback for channel |"
                 + channel.getFriendlyName()
                 + "|");
-    }
-
-    @Override
-    public void onChannelSynchronizationChange(Channel channel)
-    {
-        logger.e("Received onChannelSynchronizationChange callback for channel |"
-                + channel.getFriendlyName()
-                + "|");
-    }
-
-    @Override
-    public void onClientSynchronization(IPMessagingClient.SynchronizationStatus status)
-    {
-        logger.e("Received onClientSynchronization callback " + status.toString());
-    }
-
-    @Override
-    public void onUserInfoChange(UserInfo userInfo)
-    {
-        logger.e("Received onUserInfoChange callback");
-    }
-
-    @Override
-    public void onToastNotification(String channelId, String messageId)
-    {
-        logger.d("Received new push notification");
-    }
-
-    @Override
-    public void onToastSubscribed()
-    {
-        logger.d("Subscribed to push notifications");
-
-    }
-
-    @Override
-    public void onToastFailed(ErrorInfo errorInfo)
-    {
-        logger.d("Failed to subscribe to push notifications");
-
-    }
-
-    @Override
-    public void onChannelAdd(Channel channel)
-    {
-        logger.d("Received onChannelAdd callback for channel |" + channel.getFriendlyName() + "|");
-    }
-
-    @Override
-    public void onChannelChange(Channel channel)
-    {
-        logger.d("Received onChannelChange callback for channel |" + channel.getFriendlyName()
-                + "|");
-    }
-
-    @Override
-    public void onChannelDelete(Channel channel)
-    {
-        logger.d("Received onChannelDelete callback for channel |" + channel.getFriendlyName()
-                + "|");
-    }
-
-    @Override
-    public void onError(ErrorInfo errorInfo)
-    {
-        TwilioApplication.get().logErrorInfo("Received onError callback", errorInfo);
     }
 
     // Message-related callbacks

@@ -124,7 +124,7 @@ public class ConversationFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         root = inflater.inflate(R.layout.activity_conversation, container, false);
-        BasicIPMessagingClient basicClient = TwilioApplication.get().getBasicClient();
+        BasicIPMessagingClient basicClient = MainApplication.get().getBasicClient();
         identity = basicClient.getIpMessagingClient().getMyUserInfo().getIdentity();
         /*
          * Load views from resources

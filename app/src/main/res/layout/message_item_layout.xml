@@ -1,95 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="100dp"
+    android:layout_height="wrap_content"
+    xmlns:card="http://schemas.android.com/apk/res-auto"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
     android:orientation="vertical">
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/txt_author"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Jason Lu"
+        android:layout_marginStart="70dp"
+        android:textColor="@color/colorGray"/>
     <LinearLayout
         android:id="@+id/chat"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
         <RelativeLayout
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="5dp">
-
-            <ImageView
-                android:id="@+id/avatar"
-                android:layout_width="64dp"
-                android:scaleType="centerCrop"
-                android:layout_height="64dp"
+            <RelativeLayout
+                android:id="@+id/avatar_container"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_alignParentStart="true"
-                android:background="#d3d3d3"
-                android:layout_marginStart="3dp"
-                android:contentDescription="@string/userAvatar"/>
-
-            <LinearLayout
-                android:id="@+id/authorLine"
-                android:layout_width="fill_parent"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_alignParentTop="true">
+                <com.facebook.drawee.view.SimpleDraweeView
+                    android:id="@+id/avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    fresco:roundingBorderColor="#d3d3d3"
+                    fresco:roundingBorderWidth="2dp"
+                    fresco:failureImage="@drawable/ic_contact"
+                    fresco:failureImageScaleType="fitCenter"
+                    fresco:roundAsCircle="true" />
+                <com.facebook.drawee.view.SimpleDraweeView
+                    android:id="@+id/reachability"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true"
+                    fresco:failureImageScaleType="centerCrop"
+                    fresco:roundAsCircle="true"
+                    fresco:roundingBorderColor="@android:color/white"
+                    fresco:roundingBorderWidth="2dp"
+                    android:src="@drawable/reachability_notifiable"/>
+            </RelativeLayout>
+            <android.support.v7.widget.CardView
+                android:layout_width="wrap_content"
+                android:id="@+id/message_container"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_toEndOf="@+id/avatar">
-
+                android:layout_toEndOf="@+id/avatar_container"
+                android:background="@color/message_background_gray"
+                card:cardBackgroundColor="@color/message_background_gray"
+                card:cardCornerRadius="12dp"
+                android:layout_marginEnd="8dp"
+                android:minHeight="44dp"
+                card:cardElevation="0dp">
                 <com.mhealth.chat.demo.MessageTextView
-                    android:id="@+id/author"
+                    android:id="@+id/body"
                     android:layout_width="wrap_content"
+                    android:maxWidth="200dp"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dip"
                     android:paddingStart="10dip"
-                    android:text="AUTHOR"
-                    android:textAllCaps="true"
+                    android:layout_gravity="center_vertical"
+                    android:paddingEnd="10dip"
+                    android:text="some body text"
+                    android:textSize="14sp"
                     android:textColor="@android:color/primary_text_light"
-                    android:fontFamily="PT_Sans-Web-Regular"
-                    android:layout_toEndOf="@+id/avatar"/>
-
-                <ImageView
-                    android:id="@+id/reachability"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_margin="5dip"
-                    android:scaleType="centerCrop"
-                    android:layout_toEndOf="@+id/author"/>
-
-            </LinearLayout>
-
-            <com.mhealth.chat.demo.MessageTextView
-                android:id="@+id/body"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dip"
-                android:paddingStart="10dip"
-                android:paddingEnd="10dip"
-                android:text="some body text"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_below="@+id/authorLine"
-                android:layout_toEndOf="@+id/avatar"/>
-
-            <com.mhealth.chat.demo.MessageTextView
-                android:id="@+id/date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dip"
-                android:visibility="gone"
-                android:paddingStart="10dip"
-                android:paddingEnd="10dip"
-                android:text="Thursday, 30 June 2016 - 17:39"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_below="@+id/body"
-                android:layout_toEndOf="@+id/avatar"/>
-
+                    />
+            </android.support.v7.widget.CardView>
         </RelativeLayout>
-        <ImageView
-            android:id="@+id/call_action_fab"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_margin="8dp"
-            android:layout_gravity="center_vertical"
-            android:src="@drawable/ic_call_white_24px"
-            android:tint="#00ff00"/>
     </LinearLayout>
     <LinearLayout
         android:id="@+id/consumptionHorizon"
+        android:visibility="gone"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="3dp"
@@ -110,5 +104,4 @@
             android:layout_marginRight="3dp"
             android:orientation="vertical"/>
     </LinearLayout>
-
 </LinearLayout>

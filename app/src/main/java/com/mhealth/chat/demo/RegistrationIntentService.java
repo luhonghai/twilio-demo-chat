@@ -57,7 +57,7 @@ public class RegistrationIntentService extends IntentService
      */
     private void sendRegistrationToIPMClient(String token)
     {
-        TwilioApplication.get().getBasicClient().setGCMToken(token);
+        MainApplication.get().getBasicClient().setGCMToken(token);
     }
 
     /**

@@ -59,7 +59,7 @@ public class UserInfoActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
         friendlyName = (EditText)findViewById(R.id.user_friendly_name);
-        client = TwilioApplication.get().getBasicClient().getIpMessagingClient();
+        client = MainApplication.get().getBasicClient().getIpMessagingClient();
 
         friendlyName.setText(client.getMyUserInfo().getFriendlyName());
         avatarView = (ImageView)findViewById(R.id.avatar);
@@ -134,8 +134,8 @@ public class UserInfoActivity extends Activity
                         public void onError(ErrorInfo error)
                         {
                             logger.e("update failed for user attributes");
-                            TwilioApplication.get().showError(error);
-                            TwilioApplication.get().logErrorInfo(
+                            MainApplication.get().showError(error);
+                            MainApplication.get().logErrorInfo(
                                 "Update failed for user attributes", error);
                         }
                     });
@@ -244,8 +244,8 @@ public class UserInfoActivity extends Activity
             @Override
             public void onError(ErrorInfo error)
             {
-                TwilioApplication.get().showError(error);
-                TwilioApplication.get().logErrorInfo("Error listening for userInfoChange", error);
+                MainApplication.get().showError(error);
+                MainApplication.get().logErrorInfo("Error listening for userInfoChange", error);
             }
 
             @Override

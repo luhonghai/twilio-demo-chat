@@ -50,7 +50,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import uk.co.ribot.easyadapter.EasyAdapter;
 
-public class MessageActivity extends AppCompatActivity implements ChannelListener
+public class MessageActivity extends AppCompatActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
 {
     private static final Logger logger = Logger.getLogger(MessageActivity.class);
     private static final        String[] MESSAGE_OPTIONS = {
@@ -155,7 +155,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         viewVideo = findViewById(R.id.videoLayout);
         viewChat = findViewById(R.id.chat);
         if (getIntent() != null) {
-            BasicIPMessagingClient basicClient = TwilioApplication.get().getBasicClient();
+            BasicIPMessagingClient basicClient = MainApplication.get().getBasicClient();
             identity = basicClient.getIpMessagingClient().getMyUserInfo().getIdentity();
             String   channelSid = getIntent().getStringExtra("C_SID");
             Channels channelsObject = basicClient.getIpMessagingClient().getChannels();
@@ -172,7 +172,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
             @Override
             public void onError(ErrorInfo errorInfo)
             {
-                TwilioApplication.get().logErrorInfo("Channel sync failed", errorInfo);
+                MainApplication.get().logErrorInfo("Channel sync failed", errorInfo);
             }
 
             @Override
@@ -248,7 +248,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().logErrorInfo("Error leaving channel",
+                                MainApplication.get().logErrorInfo("Error leaving channel",
                                                                      errorInfo);
                             }
 
@@ -270,7 +270,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().logErrorInfo("Error destroying channel",
+                                MainApplication.get().logErrorInfo("Error destroying channel",
                                                                      errorInfo);
                             }
 
@@ -317,8 +317,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo("Error changing name",
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo("Error changing name",
                                                                      errorInfo);
                             }
 
@@ -374,8 +374,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo("Setting attributes failed",
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo("Setting attributes failed",
                                                                      errorInfo);
                             }
                         });
@@ -414,8 +414,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo("Error in inviteByIdentity",
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo("Error in inviteByIdentity",
                                                                      errorInfo);
                             }
 
@@ -459,8 +459,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo("Error adding member",
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo("Error adding member",
                                                                      errorInfo);
                             }
 
@@ -504,8 +504,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                         @Override
                         public void onError(ErrorInfo errorInfo)
                         {
-                            TwilioApplication.get().showError(errorInfo);
-                            TwilioApplication.get().logErrorInfo("Error in removeMember operation",
+                            MainApplication.get().showError(errorInfo);
+                            MainApplication.get().logErrorInfo("Error in removeMember operation",
                                                                  errorInfo);
                         }
 
@@ -546,8 +546,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo("Error updating message",
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo("Error updating message",
                                                                      errorInfo);
                             }
 
@@ -622,8 +622,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
-                                TwilioApplication.get().showError(errorInfo);
-                                TwilioApplication.get().logErrorInfo(
+                                MainApplication.get().showError(errorInfo);
+                                MainApplication.get().logErrorInfo(
                                     "Error updating message attributes", errorInfo);
                             }
 
@@ -790,8 +790,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                                                 @Override
                                                 public void onError(ErrorInfo errorInfo)
                                                 {
-                                                    TwilioApplication.get().showError(errorInfo);
-                                                    TwilioApplication.get().logErrorInfo(
+                                                    MainApplication.get().showError(errorInfo);
+                                                    MainApplication.get().logErrorInfo(
                                                         "Error removing message", errorInfo);
                                                 }
 
@@ -840,8 +840,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                 @Override
                 public void onError(ErrorInfo errorInfo)
                 {
-                    TwilioApplication.get().showError(errorInfo);
-                    TwilioApplication.get().logErrorInfo("Error sending message", errorInfo);
+                    MainApplication.get().showError(errorInfo);
+                    MainApplication.get().logErrorInfo("Error sending message", errorInfo);
                 }
 
                 @Override
@@ -861,6 +861,13 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         }
 
         inputText.requestFocus();
+    }
+
+    public MessageItem getMessageItemByPosition(int pos) {
+        if (adapter != null && pos >= 0 && pos < adapter.getCount()) {
+            return adapter.getItem(pos);
+        }
+        return null;
     }
 
     @Override
@@ -968,8 +975,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                         @Override
                         public void onError(ErrorInfo errorInfo)
                         {
-                            TwilioApplication.get().showError(errorInfo);
-                            TwilioApplication.get().logErrorInfo(
+                            MainApplication.get().showError(errorInfo);
+                            MainApplication.get().logErrorInfo(
                                 "Error changing channel uniqueName", errorInfo);
                         }
 

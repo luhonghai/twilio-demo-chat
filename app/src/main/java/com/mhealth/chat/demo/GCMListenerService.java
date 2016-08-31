@@ -29,7 +29,7 @@ public class GCMListenerService extends FirebaseMessagingService
         for (Object key : data.keySet()) {
             pushNotification.put(key.toString(), data.get(key).toString());
         }
-        TwilioApplication.get().getBasicClient().getIpMessagingClient().handleNotification(
+        MainApplication.get().getBasicClient().getIpMessagingClient().handleNotification(
             pushNotification);
         notify(pushNotification, message);
     }

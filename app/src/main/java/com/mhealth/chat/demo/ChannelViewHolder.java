@@ -64,20 +64,6 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
             }
             if (icon != null && icon.length() > 0) {
                 ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
-            } else {
-                channel.synchronize(new Constants.CallbackListener<Channel>() {
-                    @Override
-                    public void onSuccess(Channel c) {
-                        try {
-                            String icon = c.getAttributes().opt("group_icon").toString();
-                            if (icon != null && icon.length() > 0) {
-                                ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
             }
         } catch (Exception e) {
             e.printStackTrace();

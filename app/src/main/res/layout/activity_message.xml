@@ -54,6 +54,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_above="@+id/typingIndicator"
+                            android:dividerHeight="0dp"
+                            android:divider="@null"
                             android:layout_alignParentTop="true"
                             android:transcriptMode="alwaysScroll" />
                         <TextView
@@ -77,13 +79,19 @@
                                 android:layout_weight="1"
                                 android:inputType="textShortMessage"
                                 android:lines="1"
+                                android:maxLines="1"
+                                android:layout_margin="3dp"
                                 android:singleLine="true"
                                 android:hint="@string/type_message" />
-                            <ImageButton
+                            <ImageView
                                 android:id="@+id/sendButton"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:src="@android:drawable/ic_menu_send" />
+                                android:layout_margin="6dp"
+                                android:layout_gravity="center_vertical|center_horizontal"
+                                android:background="@android:color/transparent"
+                                android:tint="@color/colorPrimary"
+                                android:src="@drawable/ic_send_black_24dp" />
                         </LinearLayout>
                     </RelativeLayout>
                 </RelativeLayout>

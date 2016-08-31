@@ -16,6 +16,7 @@ public class ActionEvent {
     }
 
     public enum Action {
-        GROUP_ADDED
+        GROUP_ADDED,
+        CHANNELS_UPDATED
     }
 }

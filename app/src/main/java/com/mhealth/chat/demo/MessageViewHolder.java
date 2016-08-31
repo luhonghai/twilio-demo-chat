@@ -1,22 +1,22 @@
 package com.mhealth.chat.demo;
 
-import org.greenrobot.eventbus.EventBus;
-import org.json.JSONObject;
-
-import com.twilio.ipmessaging.Member;
-import com.twilio.ipmessaging.Message;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Context;
 import android.graphics.Color;
-
-import android.util.Base64;
+import android.support.v7.widget.CardView;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.facebook.drawee.view.SimpleDraweeView;
+import com.mhealth.chat.demo.util.DrawableUtils;
+import com.twilio.ipmessaging.Member;
+import com.twilio.ipmessaging.Message;
+import com.twilio.ipmessaging.UserInfo;
+
+import org.json.JSONObject;
 
 import uk.co.ribot.easyadapter.ItemViewHolder;
 import uk.co.ribot.easyadapter.PositionInfo;
@@ -31,25 +31,19 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
     };
 
     @ViewId(R.id.avatar)
-    ImageView imageView;
+    SimpleDraweeView imageView;
 
     @ViewId(R.id.reachability)
-    ImageView reachabilityView;
+    SimpleDraweeView reachabilityView;
 
     @ViewId(R.id.body)
     TextView body;
 
-    @ViewId(R.id.author)
+    @ViewId(R.id.txt_author)
     TextView author;
-
-    @ViewId(R.id.date)
-    TextView date;
 
     @ViewId(R.id.chat)
     View viewChat;
-
-    @ViewId(R.id.call_action_fab)
-    View imgCall;
 
     @ViewId(R.id.consumptionHorizonIdentities)
     RelativeLayout identities;
@@ -57,7 +51,17 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
     @ViewId(R.id.consumptionHorizonLines)
     LinearLayout lines;
 
+    @ViewId(R.id.message_container)
+    CardView messageContainer;
+
+    @ViewId(R.id.avatar_container)
+    View avatarContainer;
+
     View view;
+
+    public interface MessageItemAdapter {
+        MessageActivity.MessageItem getMessageItemByPosition(int pos);
+    }
 
     public MessageViewHolder(View view)
     {
@@ -80,21 +84,6 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                 return false;
             }
         });
-
-        viewChat.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v)
-            {
-                date.setVisibility(date.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-            }
-        });
-
-        imgCall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                EventBus.getDefault().post(new CallEvent(getItem().getMessage().getAuthor()));
-            }
-        });
     }
 
     @Override
@@ -103,9 +92,7 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
         if (message != null) {
             Message msg = message.getMessage();
 
-            author.setText(msg.getAuthor());
             body.setText(msg.getMessageBody());
-            date.setText(msg.getTimeStamp());
 
             identities.removeAllViews();
             lines.removeAllViews();
@@ -115,16 +102,85 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                     if (msg.getAuthor().equals(member.getUserInfo().getIdentity())) {
                         fillUserAvatar(imageView, member);
                         fillUserReachability(reachabilityView, member);
-                    }
+                        if (member.getLastConsumedMessageIndex() != null
+                                && member.getLastConsumedMessageIndex()
+                                == message.getMessage().getMessageIndex()) {
+                            //drawConsumptionHorizon(member);
 
-                    if (member.getLastConsumedMessageIndex() != null
-                        && member.getLastConsumedMessageIndex()
-                               == message.getMessage().getMessageIndex()) {
-                        drawConsumptionHorizon(member);
+                        } else {
+
+                        }
+                        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) avatarContainer.getLayoutParams();
+                        RelativeLayout.LayoutParams mesParams = (RelativeLayout.LayoutParams) messageContainer.getLayoutParams();
+                        if (msg.getAuthor().equalsIgnoreCase(message.getCurrentUser())) {
+                            params.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                            params.removeRule(RelativeLayout.ALIGN_PARENT_START);
+                            mesParams.removeRule(RelativeLayout.END_OF);
+                            mesParams.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                            messageContainer.setCardBackgroundColor(getContext().getResources().getColor(R.color.colorPrimary));
+                            avatarContainer.setVisibility(View.GONE);
+                            body.setTextColor(getContext().getResources().getColor(android.R.color.white));
+                        } else {
+                            params.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                            params.removeRule(RelativeLayout.ALIGN_PARENT_END);
+                            mesParams.addRule(RelativeLayout.END_OF, R.id.avatar_container);
+                            mesParams.removeRule(RelativeLayout.ALIGN_PARENT_END);
+                            messageContainer.setCardBackgroundColor(getContext().getResources().getColor(R.color.message_background_gray));
+                            avatarContainer.setVisibility(View.VISIBLE);
+                            body.setTextColor(getContext().getResources().getColor(android.R.color.black));
+                        }
+                        messageContainer.setLayoutParams(mesParams);
+                        avatarContainer.setLayoutParams(params);
+                        if (isLastAuthorMessage(view.getContext(), message, pos)) {
+                            avatarContainer.setVisibility(View.VISIBLE);
+                        } else {
+                            avatarContainer.setVisibility(View.INVISIBLE);
+                        }
+                        if (isFirstAuthorMessage(view.getContext(), message, pos)
+                                && !msg.getAuthor().equalsIgnoreCase(message.getCurrentUser())) {
+                            author.setVisibility(View.VISIBLE);
+                            author.setText(getMemberName(member.getUserInfo()));
+                        } else {
+                            author.setVisibility(View.GONE);
+                        }
+                        break;
                     }
                 }
+
+
             }
         }
+    }
+
+    private String getMemberName(UserInfo userInfo) {
+        return (userInfo.getFriendlyName() != null && !userInfo.getFriendlyName().isEmpty())
+                ?  userInfo.getFriendlyName() : userInfo.getIdentity();
+    }
+
+    private boolean isLastAuthorMessage(Context context, MessageActivity.MessageItem current, PositionInfo pos) {
+        if (pos.isLast()) return true;
+        if (context instanceof MessageItemAdapter) {
+            MessageItemAdapter adapter = (MessageItemAdapter) context;
+            MessageActivity.MessageItem nextItem = adapter.getMessageItemByPosition(pos.getPosition() + 1);
+            return (nextItem != null
+                    && !nextItem.getMessage().getAuthor().equalsIgnoreCase(current.getMessage().getAuthor()));
+        } else {
+            Log.d("MessageViewHolder", "isLastAuthorMessage: context do not implement MessageItemAdapter");
+        }
+        return false;
+    }
+
+    private boolean isFirstAuthorMessage(Context context, MessageActivity.MessageItem current, PositionInfo pos) {
+        if (pos.isFirst()) return true;
+        if (context instanceof MessageItemAdapter) {
+            MessageItemAdapter adapter = (MessageItemAdapter) context;
+            MessageActivity.MessageItem prevItem = adapter.getMessageItemByPosition(pos.getPosition() - 1);
+            return (prevItem != null
+                    && !prevItem.getMessage().getAuthor().equalsIgnoreCase(current.getMessage().getAuthor()));
+        } else {
+            Log.d("MessageViewHolder", "isFirstAuthorMessage: context do not implement MessageItemAdapter");
+        }
+        return false;
     }
 
     private void drawConsumptionHorizon(Member member)
@@ -153,29 +209,26 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
         lines.addView(line);
     }
 
-    private void fillUserAvatar(ImageView avatarView, Member member)
+    private void fillUserAvatar(SimpleDraweeView avatarView, Member member)
     {
         JSONObject attributes = member.getUserInfo().getAttributes();
-        String     avatar = (String)attributes.opt("avatar");
-        if (avatar != null) {
-            byte[] data = Base64.decode(avatar, Base64.NO_WRAP);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            avatarView.setImageBitmap(bitmap);
-        }
-        else {
-            avatarView.setImageResource(R.drawable.avatar2);
-        }
+        String  avatar = (String)attributes.opt("avatar_url");
+        avatarView.setImageURI(avatar);
     }
 
-    private void fillUserReachability(ImageView reachabilityView, Member member) {
-        if (!TwilioApplication.get().getBasicClient().getIpMessagingClient().isReachabilityEnabled()) {
-            reachabilityView.setImageResource(R.drawable.reachability_disabled);
+    private void fillUserReachability(SimpleDraweeView reachabilityView, Member member) {
+        if (!MainApplication.get().getBasicClient().getIpMessagingClient().isReachabilityEnabled()) {
+            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_block_black_24dp));
+            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorOrange));
         } else if (member.getUserInfo().isOnline()) {
-            reachabilityView.setImageResource(R.drawable.reachability_online);
+            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_check_circle_black_24dp));
+            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorPrimary));
         } else if (member.getUserInfo().isNotifiable()) {
-            reachabilityView.setImageResource(R.drawable.reachability_notifiable);
+            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_check_circle_black_24dp));
+            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorGray));
         } else {
-            reachabilityView.setImageResource(R.drawable.reachability_offline);
+            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_lens_black_24dp));
+            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorGray));
         }
     }
 

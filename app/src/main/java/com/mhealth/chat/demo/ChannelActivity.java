@@ -31,16 +31,17 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.OptionalPendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.Constants.StatusListener;
 import com.twilio.ipmessaging.ErrorInfo;
+import com.twilio.ipmessaging.IPMessagingClient;
+import com.twilio.ipmessaging.IPMessagingClientListener;
 import com.twilio.ipmessaging.UserInfo;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,8 +119,76 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         setupViewPager();
         setupTabLayout();
         navigationView.setNavigationItemSelectedListener(this);
-        chatClient = TwilioApplication.get().getBasicClient();
+        chatClient = MainApplication.get().getBasicClient();
         setNavigationHeader();
+        setListener();
+    }
+
+    private void setListener()
+    {
+        chatClient.getIpMessagingClient().setListener(new IPMessagingClientListener() {
+            @Override
+            public void onChannelAdd(Channel channel)
+            {
+            }
+
+            @Override
+            public void onChannelChange(Channel channel)
+            {
+
+            }
+
+            @Override
+            public void onChannelDelete(Channel channel)
+            {
+
+            }
+
+            @Override
+            public void onError(ErrorInfo error)
+            {
+            }
+
+            @Override
+            public void onChannelSynchronizationChange(Channel channel)
+            {
+            }
+
+            @Override
+            public void onUserInfoChange(UserInfo userInfo)
+            {
+                runOnUiThread(new Runnable() {
+                    public void run()
+                    {
+                        setNavigationHeader();
+                    }
+                });
+            }
+
+            @Override
+            public void onClientSynchronization(
+                    IPMessagingClient.SynchronizationStatus synchronizationStatus)
+            {
+                if (synchronizationStatus == IPMessagingClient.SynchronizationStatus.CHANNELS_COMPLETED) {
+                    EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.CHANNELS_UPDATED));
+                }
+            }
+
+            @Override
+            public void onToastNotification(String channelId, String messageId)
+            {
+            }
+
+            @Override
+            public void onToastSubscribed()
+            {
+            }
+
+            @Override
+            public void onToastFailed(ErrorInfo errorInfo)
+            {
+            }
+        });
     }
 
     @Override
@@ -153,31 +222,9 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
             UserInfo userInfo = chatClient.getIpMessagingClient().getMyUserInfo();
             final SimpleDraweeView imgUserProfile = (SimpleDraweeView) headerView.findViewById(R.id.img_user_profile);
             AppCompatTextView txtUserName = (AppCompatTextView) headerView.findViewById(R.id.txt_user_name);
-            OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
-            if (opr.isDone()) {
-                final GoogleSignInResult result = opr.get();
-                if (result != null && result.getSignInAccount() != null && result.getSignInAccount().getPhotoUrl() != null) {
-                    try {
-                        imgUserProfile.setImageURI(result.getSignInAccount().getPhotoUrl().toString());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            } else {
-                opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
-                    @Override
-                    public void onResult(@NonNull GoogleSignInResult result) {
-                        if (result.getSignInAccount() != null && result.getSignInAccount().getPhotoUrl() != null) {
-                            try {
-                                imgUserProfile.setImageURI(result.getSignInAccount().getPhotoUrl().toString());
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                });
-            }
-
+            try {
+                imgUserProfile.setImageURI(userInfo.getAttributes().optString("avatar_url"));
+            } catch (Exception e) {e.printStackTrace();}
             txtUserName.setText(userInfo.getFriendlyName());
         }
     }
@@ -287,7 +334,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
                                                         @Override
                                                         public void onError(ErrorInfo errorInfo)
                                                         {
-                                                            TwilioApplication.get().logErrorInfo(
+                                                            MainApplication.get().logErrorInfo(
                                                                     "Failed to join channel", errorInfo);
                                                         }
 
@@ -313,7 +360,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
                                                         @Override
                                                         public void onError(ErrorInfo errorInfo)
                                                         {
-                                                            TwilioApplication.get().logErrorInfo(
+                                                            MainApplication.get().logErrorInfo(
                                                                     "Failed to decline channel invite", errorInfo);
                                                         }
 
@@ -398,7 +445,6 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
 
         @Override
         public int getCount() {
-            logger.d("Channel tab count " + mFragments.size());
             return mFragments.size();
         }
 

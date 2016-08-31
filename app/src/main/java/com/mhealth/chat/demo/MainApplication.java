@@ -11,13 +11,13 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.twilio.ipmessaging.ErrorInfo;
 
-public class TwilioApplication extends Application
+public class MainApplication extends Application
 {
-    private static TwilioApplication instance;
+    private static MainApplication instance;
 
     private BasicIPMessagingClient   basicClient;
 
-    public static TwilioApplication get()
+    public static MainApplication get()
     {
         return instance;
     }
@@ -26,11 +26,9 @@ public class TwilioApplication extends Application
     public void onCreate()
     {
         super.onCreate();
-        TwilioApplication.instance = this;
+        MainApplication.instance = this;
         basicClient = new BasicIPMessagingClient(getApplicationContext());
-        ImageLoaderConfiguration imageLoaderConfiguration = new ImageLoaderConfiguration
-                .Builder(this).build();
-        ImageLoader.getInstance().init(imageLoaderConfiguration);
+        ImageLoader.getInstance().init(ImageLoaderConfiguration.createDefault(this));
         Fresco.initialize(this);
     }
 
@@ -58,7 +56,7 @@ public class TwilioApplication extends Application
 
     public void logErrorInfo(final String message, final ErrorInfo error)
     {
-        Log.e("TwilioApplication",
+        Log.e("MainApplication",
               String.format("%s. Error code: %s, text: %s",
                             message,
                             error.getErrorCode(),

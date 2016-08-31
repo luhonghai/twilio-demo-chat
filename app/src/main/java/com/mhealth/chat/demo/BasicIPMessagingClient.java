@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
+import com.mhealth.chat.demo.data.UserPreference;
 import com.twilio.common.AccessManager;
 
 import com.twilio.ipmessaging.Channel;
@@ -164,7 +165,7 @@ public class BasicIPMessagingClient extends CallbackListener<IPMessagingClient>
     @Override
     public void onError(ErrorInfo errorInfo)
     {
-        TwilioApplication.get().logErrorInfo("Received onError event", errorInfo);
+        MainApplication.get().logErrorInfo("Received onError event", errorInfo);
     }
 
     public IPMessagingClient getIpMessagingClient()
@@ -178,8 +179,8 @@ public class BasicIPMessagingClient extends CallbackListener<IPMessagingClient>
             @Override
             public void onError(ErrorInfo errorInfo)
             {
-                TwilioApplication.get().showError(errorInfo);
-                TwilioApplication.get().logErrorInfo("GCM registration not successful", errorInfo);
+                MainApplication.get().showError(errorInfo);
+                MainApplication.get().logErrorInfo("GCM registration not successful", errorInfo);
             }
 
             @Override
@@ -208,7 +209,7 @@ public class BasicIPMessagingClient extends CallbackListener<IPMessagingClient>
                 IPMessagingClient.Properties props =
                     new IPMessagingClient.Properties.Builder()
                         .setSynchronizationStrategy(
-                            IPMessagingClient.SynchronizationStrategy.CHANNELS_LIST)
+                            IPMessagingClient.SynchronizationStrategy.ALL)
                         .setInitialMessageCount(50)
                         .createProperties();
 
@@ -324,19 +325,22 @@ public class BasicIPMessagingClient extends CallbackListener<IPMessagingClient>
         protected void onPostExecute(String result)
         {
             super.onPostExecute(result);
-            ipMessagingClient.updateToken(accessToken, new StatusListener() {
-                @Override
-                public void onSuccess()
-                {
-                    logger.d("Updated Token was successfull");
-                }
-                @Override
-                public void onError(ErrorInfo errorInfo)
-                {
-                    logger.e("Updated Token failed");
-                }
-            });
-            accessManager.updateToken(null);
+            new UserPreference(context).setAccessToken(accessToken);
+            if (ipMessagingClient != null) {
+                ipMessagingClient.updateToken(accessToken, new StatusListener() {
+                    @Override
+                    public void onSuccess() {
+                        logger.d("Updated Token was successfull");
+                    }
+
+                    @Override
+                    public void onError(ErrorInfo errorInfo) {
+                        logger.e("Updated Token failed");
+                    }
+                });
+            }
+            accessManager.updateToken(accessToken);
+            createClientWithAccessManager();
         }
 
         @Override
