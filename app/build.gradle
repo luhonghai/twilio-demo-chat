@@ -66,10 +66,6 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
-    lintOptions {
-        abortOnError false
-    }
-
     signingConfigs {
         testRelease {
             storeFile file("../extra/keystore.jks")
@@ -91,11 +87,6 @@ android {
             signingConfig signingConfigs.testRelease
         }
     }
-}
-
-// Keep an eye on SDK deprecations
-tasks.withType(JavaCompile) {
-    options.compilerArgs << "-Xlint:deprecation" << "-Xdiags:verbose"
 }
 
 apply plugin: 'com.google.gms.google-services'
