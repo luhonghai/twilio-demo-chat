@@ -113,6 +113,8 @@ public class ConversationActivity extends BaseActivity {
 
     boolean isActionExecuted = false;
 
+    private IncomingInvite invite;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -197,7 +199,7 @@ public class ConversationActivity extends BaseActivity {
                 logger.d("Do accept invite");
                 LocalMedia localMedia = setupLocalMedia();
                 setAudioFocus(true);
-                IncomingInvite invite = MainApplication.get().getIncomingInvite();
+                invite = MainApplication.get().getIncomingInvite();
                 if (invite == null) {
                     logger.e("No invitation. Try to logout");
                     logout();
@@ -324,6 +326,12 @@ public class ConversationActivity extends BaseActivity {
             outgoingInvite.cancel();
             outgoingInvite = null;
         }
+        try {
+            if (invite != null) {
+                invite.reject();
+                invite = null;
+            }
+        } catch (Exception e) {}
         setAudioFocus(false);
         EventBus.getDefault().post(new HangupEvent());
     }
@@ -338,6 +346,7 @@ public class ConversationActivity extends BaseActivity {
         if (cameraCapturer != null && cameraCapturer.isPreviewing()) {
             cameraCapturer = null;
         }
+
         hangup();
         MainApplication.get().setIncomingInvite(null);
         completeLogout();
