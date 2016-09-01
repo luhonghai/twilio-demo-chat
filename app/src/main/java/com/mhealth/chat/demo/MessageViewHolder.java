@@ -78,7 +78,7 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
     @Override
     public void onSetListeners()
     {
-        view.setOnLongClickListener(new View.OnLongClickListener() {
+        messageCardView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v)
             {
@@ -88,6 +88,15 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                     return true;
                 }
                 return false;
+            }
+        });
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                OnMessageClickListener listener = getListener(OnMessageClickListener.class);
+                if (listener != null) {
+                    listener.onMemberSelect((Member) v.getTag());
+                }
             }
         });
     }
@@ -118,8 +127,8 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                         isReaded = true;
                     }
                     if (msg.getAuthor().equals(member.getUserInfo().getIdentity())) {
-                        fillUserAvatar(imageView, member);
-                        fillUserReachability(reachabilityView, member);
+                        DrawableUtils.fillUserAvatar(imageView, member);
+                        DrawableUtils.fillUserReachability(reachabilityView, member);
                         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) avatarContainer.getLayoutParams();
                         RelativeLayout.LayoutParams mesParams = (RelativeLayout.LayoutParams) messageContainer.getLayoutParams();
                         if (msg.getAuthor().equalsIgnoreCase(message.getCurrentUser())) {
@@ -156,7 +165,8 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                         }
                     }
                 }
-                messageStatus.setVisibility(isReaded ? View.INVISIBLE : View.VISIBLE);
+                messageStatus.setVisibility((isReaded || !msg.getAuthor().equalsIgnoreCase(message.getCurrentUser()) ?
+                        View.INVISIBLE : View.VISIBLE));
             }
         }
     }
@@ -196,35 +206,14 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
     {
         SimpleDraweeView view = (SimpleDraweeView)
                 inflater.inflate(R.layout.small_member_avatar_item, identities, false);
-        fillUserAvatar(view, member);
+        DrawableUtils.fillUserAvatar(view, member);
         identities.addView(view);
     }
 
-    private void fillUserAvatar(SimpleDraweeView avatarView, Member member)
-    {
-        JSONObject attributes = member.getUserInfo().getAttributes();
-        String  avatar = (String)attributes.opt("avatar_url");
-        avatarView.setImageURI(avatar);
-    }
-
-    private void fillUserReachability(SimpleDraweeView reachabilityView, Member member) {
-        if (!MainApplication.get().getBasicClient().getIpMessagingClient().isReachabilityEnabled()) {
-            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_block_black_24dp));
-            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorOrange));
-        } else if (member.getUserInfo().isOnline()) {
-            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_online_black_24dp));
-            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorPrimary));
-        } else if (member.getUserInfo().isNotifiable()) {
-            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_online_black_24dp));
-            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorGray));
-        } else {
-            reachabilityView.setImageURI(DrawableUtils.getResourceURI(R.drawable.ic_lens_black_24dp));
-            reachabilityView.setColorFilter(getContext().getResources().getColor(R.color.colorGray));
-        }
-    }
 
     public interface OnMessageClickListener {
         void onMessageClicked(MessageActivity.MessageItem message);
+        void onMemberSelect(Member member);
     }
 
     public int getMemberRgb(String identity)

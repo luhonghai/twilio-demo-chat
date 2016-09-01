@@ -17,7 +17,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
@@ -33,7 +32,9 @@ import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
+import com.mhealth.chat.demo.twilio.TwilioService;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.Constants.StatusListener;
@@ -49,9 +50,12 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 
 @SuppressLint("InflateParams")
-public class ChannelActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
+public class ChannelActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener,
         GoogleApiClient.OnConnectionFailedListener
 {
 
@@ -123,21 +127,74 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         chatClient = MainApplication.get().getBasicClient();
         setNavigationHeader();
         setListener();
+        updateChannels();
+    }
+
+    private void updateChannels() {
+        try {
+            for (Channel channel : chatClient.getIpMessagingClient().getChannels().getChannels()) {
+                TwilioService.getInstance().getChannel(channel.getSid())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.newThread())
+                        .subscribe(new Action1<TwilioChannel>() {
+                            @Override
+                            public void call(TwilioChannel twilioChannel) {
+                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
+                            }
+                        }, new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                throwable.printStackTrace();
+                            }
+                        });
+            }
+        } catch (Exception e) {}
     }
 
     private void setListener()
     {
-        if (chatClient.getIpMessagingClient() == null) return;
+        if (chatClient.getIpMessagingClient() == null) {
+            this.finish();
+            return;
+        }
         chatClient.getIpMessagingClient().setListener(new IPMessagingClientListener() {
             @Override
             public void onChannelAdd(Channel channel)
             {
+                TwilioService.getInstance().getChannel(channel.getSid())
+                        .observeOn(
+                                AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.newThread())
+                        .subscribe(new Action1<TwilioChannel>() {
+                            @Override
+                            public void call(TwilioChannel twilioChannel) {
+                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
+                            }
+                        }, new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                throwable.printStackTrace();
+                            }
+                        });
             }
 
             @Override
             public void onChannelChange(Channel channel)
             {
-
+                TwilioService.getInstance().getChannel(channel.getSid())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.newThread())
+                        .subscribe(new Action1<TwilioChannel>() {
+                            @Override
+                            public void call(TwilioChannel twilioChannel) {
+                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
+                            }
+                        }, new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                throwable.printStackTrace();
+                            }
+                        });
             }
 
             @Override
@@ -209,6 +266,11 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     private void setNavigationHeader() {
@@ -296,7 +358,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
     protected void onResume()
     {
         super.onResume();
-        handleIncomingIntent(getIntent());
+        //handleIncomingIntent(getIntent());
     }
 
     private boolean handleIncomingIntent(Intent intent)

@@ -3,6 +3,7 @@ package com.mhealth.chat.demo.adapter;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -14,6 +15,7 @@ import com.twilio.ipmessaging.UserInfo;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,12 +28,24 @@ public class SelectMemberAdapter extends RecyclerView.Adapter<SelectMemberViewHo
 
     private final Context context;
 
-    private final SelectMemberViewListener listener;
+    private final SelectMemberViewListener listener = new SelectMemberViewListener() {
+        @Override
+        public void selectMember(View view, Member member) {
+            if (selectedMembers.contains(member)) {
+                selectedMembers.remove(member);
+                view.findViewById(R.id.img_selected).setVisibility(View.GONE);
+            } else {
+                selectedMembers.add(member);
+                view.findViewById(R.id.img_selected).setVisibility(View.VISIBLE);
+            }
+        }
+    };
 
-    public SelectMemberAdapter(Context context, List<Member> members, SelectMemberViewListener listener) {
+    private final List<Member> selectedMembers = new ArrayList<>();
+
+    public SelectMemberAdapter(Context context, List<Member> members) {
         this.members = members;
         this.context = context;
-        this.listener = listener;
     }
 
     @Override
@@ -47,12 +61,15 @@ public class SelectMemberAdapter extends RecyclerView.Adapter<SelectMemberViewHo
         fillUserAvatar(holder.imageView, member);
         holder.memberName.setText(getMemberName(member.getUserInfo()));
         holder.cardItem.setTag(member);
-
     }
 
     private String getMemberName(UserInfo userInfo) {
         return (userInfo.getFriendlyName() != null && !userInfo.getFriendlyName().isEmpty())
                 ?  userInfo.getFriendlyName() : userInfo.getIdentity();
+    }
+
+    public List<Member> getSelectedMembers() {
+        return selectedMembers;
     }
 
     private void fillUserAvatar(SimpleDraweeView avatarView, Member member)

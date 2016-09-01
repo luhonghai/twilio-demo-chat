@@ -33,10 +33,13 @@ public class SelectMemberViewHolder extends RecyclerView.ViewHolder {
     @Bind(R.id.card_item)
     View cardItem;
 
+    @Bind(R.id.img_selected)
+    View viewSelected;
+
     @OnClick(R.id.card_item)
     public void clickItem(View item) {
         if (listener != null) {
-            listener.selectMember((Member) item.getTag());
+            listener.selectMember(item, (Member) item.getTag());
         }
     }
 

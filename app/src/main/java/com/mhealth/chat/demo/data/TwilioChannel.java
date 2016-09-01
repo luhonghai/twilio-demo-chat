@@ -26,6 +26,7 @@ public class TwilioChannel extends TwilioObject {
         private String icon;
 
         public String getIcon() {
+            if (icon == null) return "";
             return icon;
         }
 
@@ -75,7 +76,7 @@ public class TwilioChannel extends TwilioObject {
     }
 
     public Attribute getAttributeObject() {
-        if (attributes == null || attributes.isEmpty()) return null;
+        if (attributes == null || attributes.isEmpty()) return new Attribute();
         return new Gson().fromJson(attributes, Attribute.class);
     }
 }

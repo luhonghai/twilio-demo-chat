@@ -42,16 +42,22 @@
                     fresco:failureImage="@drawable/ic_contact"
                     fresco:failureImageScaleType="fitCenter"
                     fresco:roundAsCircle="true" />
+                <android.support.v7.widget.CardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    fresco:cardCornerRadius="6dp"
+                    fresco:cardBackgroundColor="@android:color/white"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true">
                 <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/reachability"
                     android:layout_width="12dp"
                     android:layout_height="12dp"
-                    android:layout_alignParentBottom="true"
-                    android:layout_alignParentEnd="true"
                     fresco:failureImageScaleType="centerCrop"
                     fresco:roundAsCircle="true"
                     fresco:roundingBorderColor="@android:color/white"
                     fresco:roundingBorderWidth="2dp"/>
+                </android.support.v7.widget.CardView>
             </RelativeLayout>
             <LinearLayout
                 android:id="@+id/message_container"

@@ -22,6 +22,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Channels;
@@ -50,11 +51,11 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import uk.co.ribot.easyadapter.EasyAdapter;
 
-public class MessageActivity extends AppCompatActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
+public class MessageActivity extends BaseActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
 {
     private static final Logger logger = Logger.getLogger(MessageActivity.class);
     private static final        String[] MESSAGE_OPTIONS = {
-        "Remove", "Edit", "Get Attributes", "Edit Attributes", "Call"
+        "Remove", "Edit"
     };
     private ListView                 messageListView;
     private EditText                 inputText;
@@ -107,12 +108,14 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     @Bind(R.id.toolbar)
     Toolbar toolbar;
 
+    private UserInfoDialog userInfoDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        userInfoDialog = new UserInfoDialog(this);
         createUI();
-
         EventBus.getDefault().register(this);
     }
 
@@ -121,12 +124,22 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        if (userInfoDialog != null) {
+            userInfoDialog.dismiss();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        MainApplication.get().setCurrentChannelSid("");
     }
 
     @Override
     protected void onResume()
     {
         super.onResume();
+        MainApplication.get().setCurrentChannelSid(channel.getSid());
         Intent intent = getIntent();
         if (intent != null) {
             Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
@@ -143,6 +156,10 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
 
     private void createUI()
     {
+        if (MainApplication.get().getBasicClient().getIpMessagingClient() == null) {
+            this.finish();
+            return;
+        }
         setContentView(R.layout.activity_message);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
@@ -811,16 +828,33 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                                             });
                                     } else if (which == EDIT) {
                                         showUpdateMessageDialog(message.getMessage());
-                                    } else if (which == GET_ATTRIBUTES) {
-                                        showToast(message.getMessage().getAttributes().toString());
-                                    } else if (which == SET_ATTRIBUTES) {
-                                        showUpdateMessageAttributesDialog(message.getMessage());
-                                    } else if (which == CALL) {
-                                        doCall(message.getMessage().getAuthor());
                                     }
                                 }
                             });
                         builder.show();
+                    }
+
+                    @Override
+                    public void onMemberSelect(Member member) {
+                        userInfoDialog.show(member, new UserInfoDialog.UserInfoListener() {
+                            @Override
+                            public void clickCall(Member member) {
+                                Intent intent = new Intent(MessageActivity.this, ConversationActivity.class);
+                                intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
+                                intent.putExtra(ConversationActivity.TARGET_IDENTITY, member.getUserInfo().getIdentity());
+                                startActivity(intent);
+                            }
+
+                            @Override
+                            public void clickCancelCall(Member member) {
+
+                            }
+
+                            @Override
+                            public void clickChat(Member member) {
+
+                            }
+                        });
                     }
                 });
             messageListView.setAdapter(adapter);
@@ -1014,7 +1048,10 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     }
 
     public void doCall(String target) {
-        EventBus.getDefault().post(new CallEvent(target));
+        Intent intent = new Intent(this, ConversationActivity.class);
+        intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
+        intent.putExtra(ConversationActivity.TARGET_IDENTITY, target);
+        startActivity(intent);
     }
 
     public static class MessageItem

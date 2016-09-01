@@ -20,7 +20,7 @@
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
@@ -40,6 +40,9 @@
             android:label="@string/title_activity_message"
             android:launchMode="singleTop"
             android:parentActivityName=".ChannelActivity" />
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="61e436b010ca1196341941f748b9b3a8b67b07fc" />
         <activity
             android:name=".UserInfoActivity"
             android:label="@string/user_info_activity"
@@ -71,6 +74,8 @@
             android:parentActivityName=".ChannelActivity" />
         <activity android:name=".ChannelDetailActivity"
             android:parentActivityName=".MessageActivity"/>
+        <activity android:name=".ConversationActivity"
+            />
     </application>
 
 </manifest>

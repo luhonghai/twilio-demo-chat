@@ -44,4 +44,8 @@ public class DataPreference<T extends TwilioObject> {
     public synchronized void put(T object) {
         sharedPreferences.edit().putString(object.getSid(), new Gson().toJson(object)).apply();
     }
+
+    public synchronized void clear(String sid) {
+        sharedPreferences.edit().putString(sid, "").apply();
+    }
 }

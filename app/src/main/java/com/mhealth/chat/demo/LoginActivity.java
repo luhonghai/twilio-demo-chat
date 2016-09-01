@@ -13,6 +13,9 @@ import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.gson.Gson;
 
+import com.google.gson.JsonObject;
+import com.koushikdutta.async.future.FutureCallback;
+import com.koushikdutta.ion.Ion;
 import com.mhealth.chat.demo.data.UserPreference;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.UserInfo;
@@ -61,12 +64,14 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     private GoogleSignInAccount acct;
 
+    private UserPreference userPreference;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        userPreference = new UserPreference(this);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .requestProfile()
@@ -81,9 +86,9 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
             {
                 // progressDialog.dismiss();
                 SharedPreferences sharedPreferences =
-                    PreferenceManager.getDefaultSharedPreferences(context);
+                        PreferenceManager.getDefaultSharedPreferences(context);
                 boolean sentToken =
-                    sharedPreferences.getBoolean(GcmPreferences.SENT_TOKEN_TO_SERVER, false);
+                        sharedPreferences.getBoolean(GcmPreferences.SENT_TOKEN_TO_SERVER, false);
                 if (sentToken) {
                     logger.i("GCM token remembered");
                 } else {
@@ -153,7 +158,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         {
             super.onPreExecute();
             LoginActivity.this.progressDialog =
-                ProgressDialog.show(LoginActivity.this, "", "Logging in. Please wait...", true);
+                    ProgressDialog.show(LoginActivity.this, "", "Logging in. Please wait...", true);
         }
 
         @Override
@@ -241,6 +246,35 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     @Override
     public void onLoginFinished()
     {
+        if (acct != null && chatClient.getIpMessagingClient() != null) {
+            Ion.with(this)
+                    .load(getString(R.string.api_url) + "/token.php")
+                    .addQuery("identity", chatClient.getIpMessagingClient().getMyUserInfo().getIdentity())
+                    .asJsonObject()
+                    .setCallback(new FutureCallback<JsonObject>() {
+                        @Override
+                        public void onCompleted(final Exception e, final JsonObject result) {
+                            LoginActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (e == null) {
+                                        String accessToken = result.get("token").getAsString();
+                                        logger.d("Receive video token " + accessToken);
+                                        userPreference.setVideoAccessToken(accessToken);
+                                    } else {
+                                        Toast.makeText(LoginActivity.this,
+                                                R.string.error_retrieving_access_token, Toast.LENGTH_SHORT)
+                                                .show();
+                                    }
+                                    doFinishLogin();
+                                }
+                            });
+                        }
+                    });
+        }
+    }
+
+    private void doFinishLogin() {
         if (acct != null && chatClient.getIpMessagingClient() != null) {
             final UserInfo userInfo = chatClient.getIpMessagingClient().getMyUserInfo();
             if (userInfo != null) {
@@ -335,8 +369,8 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     {
         if (!isReceiverRegistered) {
             LocalBroadcastManager.getInstance(this).registerReceiver(
-                registrationBroadcastReceiver,
-                new IntentFilter(GcmPreferences.REGISTRATION_COMPLETE));
+                    registrationBroadcastReceiver,
+                    new IntentFilter(GcmPreferences.REGISTRATION_COMPLETE));
             isReceiverRegistered = true;
         }
     }
@@ -353,7 +387,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         if (resultCode != ConnectionResult.SUCCESS) {
             if (apiAvailability.isUserResolvableError(resultCode)) {
                 apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-                    .show();
+                        .show();
             } else {
                 logger.i("This device is not supported.");
                 finish();

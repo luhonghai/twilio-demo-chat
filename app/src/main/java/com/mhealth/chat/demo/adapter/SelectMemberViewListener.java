@@ -1,5 +1,7 @@
 package com.mhealth.chat.demo.adapter;
 
+import android.view.View;
+
 import com.twilio.ipmessaging.Member;
 
 /**
@@ -7,5 +9,5 @@ import com.twilio.ipmessaging.Member;
  */
 
 public interface SelectMemberViewListener {
-    void selectMember(Member member);
+    void selectMember(View view, Member member);
 }

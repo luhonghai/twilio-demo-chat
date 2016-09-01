@@ -37,16 +37,22 @@
                     fresco:failureImage="@drawable/ic_contact"
                     fresco:failureImageScaleType="fitCenter"
                     fresco:roundAsCircle="true" />
-                <com.facebook.drawee.view.SimpleDraweeView
-                    android:id="@+id/reachability"
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
+                <android.support.v7.widget.CardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    fresco:cardCornerRadius="6dp"
+                    fresco:cardBackgroundColor="@android:color/white"
                     android:layout_alignParentBottom="true"
-                    android:layout_alignParentEnd="true"
-                    fresco:failureImageScaleType="centerCrop"
-                    fresco:roundAsCircle="true"
-                    fresco:roundingBorderColor="@android:color/white"
-                    fresco:roundingBorderWidth="2dp"/>
+                    android:layout_alignParentEnd="true">
+                    <com.facebook.drawee.view.SimpleDraweeView
+                        android:id="@+id/reachability"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        fresco:failureImageScaleType="centerCrop"
+                        fresco:roundAsCircle="true"
+                        fresco:roundingBorderColor="@android:color/white"
+                        fresco:roundingBorderWidth="2dp"/>
+                </android.support.v7.widget.CardView>
             </RelativeLayout>
             <TextView
                 android:id="@+id/txt_name"
@@ -77,6 +83,16 @@
                     android:textColor="@android:color/white"
                     />
             </android.support.v7.widget.CardView>
+            <ImageView
+                android:id="@+id/img_selected"
+                android:visibility="gone"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:tint="@color/colorPrimary"
+                android:src="@drawable/ic_check_circle_black_24dp"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="10dp"
+                android:layout_centerVertical="true"/>
         </RelativeLayout>
     </LinearLayout>
 </android.support.v7.widget.CardView>
