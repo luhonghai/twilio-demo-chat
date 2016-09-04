@@ -2,63 +2,53 @@ package com.mhealth.chat.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
-import com.mhealth.chat.demo.data.UserPreference;
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.view.UserInfoDialog;
-import com.twilio.common.AccessManager;
-import com.twilio.conversations.AudioOutput;
 import com.twilio.conversations.Conversation;
 import com.twilio.conversations.IncomingInvite;
-import com.twilio.conversations.LogLevel;
-import com.twilio.conversations.TwilioConversationsClient;
-import com.twilio.conversations.TwilioConversationsException;
 import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.Constants;
+import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.Member;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 /**
  * Created by luhonghai on 9/1/16.
  */
 
-public class BaseActivity extends AppCompatActivity implements TwilioConversationsClient.Listener, AccessManager.Listener {
+public class BaseActivity extends AppCompatActivity {
 
     protected Logger logger = Logger.getLogger(this.getClass());
 
-    protected TwilioConversationsClient conversationsClient;
-
-    protected AccessManager accessManager;
-
     private UserInfoDialog callInviteDialog;
+
+    private MaterialDialog incomingChannelInvite;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         callInviteDialog = new UserInfoDialog(this);
-        initializeTwilioSdk();
+        EventBus.getDefault().register(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         MainApplication.get().setInApplication(true);
-        if (TwilioConversationsClient.isInitialized() &&
-                conversationsClient != null &&
-                !conversationsClient.isListening()) {
-            conversationsClient.listen();
-        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         MainApplication.get().setInApplication(false);
-        if (TwilioConversationsClient.isInitialized() &&
-                conversationsClient != null  &&
-                conversationsClient.isListening() &&
-                getCurrentConversation() == null) {
-            conversationsClient.unlisten();
-        }
     }
 
 
@@ -66,74 +56,82 @@ public class BaseActivity extends AppCompatActivity implements TwilioConversatio
         return null;
     }
 
-    /*
-             * Initialize the Twilio Conversations SDK
-             */
-    private void initializeTwilioSdk(){
-        TwilioConversationsClient.setLogLevel(LogLevel.ERROR);
-        if(!TwilioConversationsClient.isInitialized()) {
-            TwilioConversationsClient.initialize(this.getApplicationContext());
-        }
-        accessManager = new AccessManager(this,
-                new UserPreference(this).getVideoAccessToken(),
-                this);
-        conversationsClient =
-                TwilioConversationsClient
-                        .create(accessManager,
-                                this);
-        // Specify the audio output to use for this conversation client
-        conversationsClient.setAudioOutput(AudioOutput.SPEAKERPHONE);
-        conversationsClient.listen();
-    }
-
     @Override
     protected void onDestroy() {
-        TwilioConversationsClient.destroy();
         if (callInviteDialog != null) callInviteDialog.dismiss();
+        if (incomingChannelInvite != null) incomingChannelInvite.dismiss();
+        EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
 
-    @Override
-    public void onTokenExpired(AccessManager twilioAccessManager) {
-        logger.d("onAccessManagerTokenExpire");
-
+    @Subscribe
+    public void onChannelEvent(ChannelEvent event) {
+        if (event.getType() == ChannelEvent.Type.INVITE) {
+            showIncomingInvite(event.getChannel());
+        }
     }
 
-    @Override
-    public void onTokenUpdated(AccessManager twilioAccessManager) {
-        logger.d("onTokenUpdated");
+    private void showIncomingInvite(final Channel channel)
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (incomingChannelInvite != null && incomingChannelInvite.isShowing()) {
+                    incomingChannelInvite.dismiss();
+                }
+                incomingChannelInvite = new MaterialDialog.Builder(BaseActivity.this)
+                        .title(R.string.incoming_call)
+                        .content(R.string.incoming_call_message)
+                        .positiveText(R.string.join)
+                        .onPositive(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                                channel.join(new Constants.StatusListener() {
+                                    @Override
+                                    public void onError(ErrorInfo errorInfo)
+                                    {
+                                        MainApplication.get().logErrorInfo(
+                                                "Failed to join channel", errorInfo);
+                                    }
 
+                                    @Override
+                                    public void onSuccess()
+                                    {
+                                        //TODO notify update list
+                                        logger.d("Successfully joined channel");
+                                    }
+                                });
+                            }
+                        })
+                        .negativeText(R.string.decline)
+                        .onNegative(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                                channel.declineInvitation(new Constants.StatusListener() {
+
+                                    @Override
+                                    public void onError(ErrorInfo errorInfo)
+                                    {
+                                        MainApplication.get().logErrorInfo(
+                                                "Failed to decline channel invite", errorInfo);
+                                    }
+
+                                    @Override
+                                    public void onSuccess()
+                                    {
+                                        logger.d("Successfully declined channel invite");
+                                    }
+
+                                });
+                            }
+                        })
+                        .show();
+            }
+        });
     }
 
-    @Override
-    public void onError(AccessManager twilioAccessManager, String s) {
-        logger.d("onError");
-    }
-
-    /*
-     * ConversationsClient listener
-     */
-    @Override
-    public void onStartListeningForInvites(TwilioConversationsClient conversationsClient) {
-        logger.d("onStartListeningForInvites");
-    }
-
-    @Override
-    public void onStopListeningForInvites(TwilioConversationsClient conversationsClient) {
-        logger.d("onStopListeningForInvites");
-        // If we are logging out let us finish the teardown process
-
-    }
-
-    @Override
-    public void onFailedToStartListening(TwilioConversationsClient conversationsClient,
-                                         TwilioConversationsException e) {
-        logger.d("onFailedToStartListening");
-    }
-
-    @Override
-    public void onIncomingInvite(TwilioConversationsClient conversationsClient,
-                                 final IncomingInvite incomingInvite) {
+    @Subscribe
+    public void onIncomingInvite(final IncomingInvite incomingInvite) {
         logger.d("onIncomingInvite");
         Member member = new Member("", incomingInvite.getInviter(), 0l, null, 0);
         try {
@@ -174,13 +172,5 @@ public class BaseActivity extends AppCompatActivity implements TwilioConversatio
                     incomingInvite.getInviter()));
             incomingInvite.reject();
         }
-    }
-
-    @Override
-    public void onIncomingInviteCancelled(TwilioConversationsClient conversationsClient,
-                                          IncomingInvite incomingInvite) {
-        logger.d("onIncomingInviteCancelled");
-        logger.d("Invite from " +
-                incomingInvite.getInviter() + " terminated");
     }
 }

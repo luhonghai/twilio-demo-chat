@@ -49,7 +49,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
     private static final String CHANNEL_TYPE = "CHANNEL_TYPE";
 
     private GridView listView;
-    private BasicIPMessagingClient basicClient;
+    private TwilioClient basicClient;
     private List<Channel> channels = new ArrayList<Channel>();
     private EasyAdapter<Channel> adapter;
     private Channels channelsObject;

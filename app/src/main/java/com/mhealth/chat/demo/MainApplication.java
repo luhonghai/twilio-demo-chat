@@ -22,7 +22,7 @@ public class MainApplication extends Application
 {
     private static MainApplication instance;
 
-    private BasicIPMessagingClient   basicClient;
+    private TwilioClient basicClient;
 
     private DataPreference<TwilioChannel> channelDataPreference;
 
@@ -45,12 +45,12 @@ public class MainApplication extends Application
         super.onCreate();
         Fabric.with(this, new Crashlytics());
         MainApplication.instance = this;
-        basicClient = new BasicIPMessagingClient(getApplicationContext());
+        basicClient = new TwilioClient(getApplicationContext());
         ImageLoader.getInstance().init(ImageLoaderConfiguration.createDefault(this));
         Fresco.initialize(this);
     }
 
-    public BasicIPMessagingClient getBasicClient()
+    public TwilioClient getBasicClient()
     {
         return this.basicClient;
     }
@@ -123,5 +123,11 @@ public class MainApplication extends Application
     public void setInApplication(boolean inApplication) {
         Log.d("Main", "setInApplication: " + inApplication);
         isInApplication = inApplication;
+    }
+
+    @Override
+    public void onTerminate() {
+        if (basicClient != null) basicClient.destroy();
+        super.onTerminate();
     }
 }

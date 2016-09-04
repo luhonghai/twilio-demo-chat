@@ -3,7 +3,6 @@ package com.mhealth.chat.demo;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
@@ -115,11 +114,15 @@ public class ConversationActivity extends BaseActivity {
 
     private IncomingInvite invite;
 
+    private TwilioConversationsClient conversationsClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
+        conversationsClient = MainApplication.get().getBasicClient().getConversationsClient();
+        isTwilioClientReady = conversationsClient.isListening();
         Bundle bundle = this.getIntent().getExtras();
         if (bundle != null && bundle.containsKey(VIDEO_ACTION)) {
             videoAction = bundle.getString(VIDEO_ACTION);
@@ -135,7 +138,6 @@ public class ConversationActivity extends BaseActivity {
         localVideoActionFab = (FloatingActionButton) this.findViewById(R.id.local_video_action_fab);
         muteActionFab = (FloatingActionButton) this.findViewById(R.id.mute_action_fab);
         speakerActionFab = (FloatingActionButton) this.findViewById(R.id.speaker_action_fab);
-        EventBus.getDefault().register(this);
         this.setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
         audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
 
@@ -261,12 +263,6 @@ public class ConversationActivity extends BaseActivity {
     @Override
     protected Conversation getCurrentConversation() {
         return conversation;
-    }
-
-    @Override
-    protected void onDestroy() {
-        EventBus.getDefault().unregister(this);
-        super.onDestroy();
     }
 
     /*
@@ -674,9 +670,8 @@ public class ConversationActivity extends BaseActivity {
         };
     }
 
-    @Override
+
     public void onStartListeningForInvites(TwilioConversationsClient conversationsClient) {
-        super.onStartListeningForInvites(conversationsClient);
         isTwilioClientReady = true;
         checkForCall();
     }

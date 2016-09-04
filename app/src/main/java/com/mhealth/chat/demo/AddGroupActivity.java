@@ -14,7 +14,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.mhealth.chat.demo.adapter.IconAdapter;
 import com.mhealth.chat.demo.adapter.IconViewListener;
 import com.mhealth.chat.demo.data.TwilioChannel;
-import com.mhealth.chat.demo.twilio.TwilioService;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
@@ -29,11 +28,8 @@ import java.io.IOException;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 
-public class AddGroupActivity extends AppCompatActivity implements IconViewListener {
+public class AddGroupActivity extends BaseActivity implements IconViewListener {
 
     @Bind(R.id.txt_name)
     TextView txtName;
@@ -44,7 +40,7 @@ public class AddGroupActivity extends AppCompatActivity implements IconViewListe
     @Bind(R.id.img_group)
     ImageView imageView;
 
-    BasicIPMessagingClient chatClient;
+    TwilioClient chatClient;
 
     private String selectedIcon = "";
 
@@ -120,22 +116,7 @@ public class AddGroupActivity extends AppCompatActivity implements IconViewListe
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        try {
-                                            TwilioService.getInstance().getChannel(channel.getSid())
-                                                    .observeOn(AndroidSchedulers.mainThread())
-                                                    .subscribeOn(Schedulers.newThread())
-                                                    .subscribe(new Action1<TwilioChannel>() {
-                                                        @Override
-                                                        public void call(TwilioChannel twilioChannel) {
-                                                            MainApplication.get().getChannelDataPreference().put(twilioChannel);
-                                                        }
-                                                    }, new Action1<Throwable>() {
-                                                        @Override
-                                                        public void call(Throwable throwable) {
-                                                            throwable.printStackTrace();
-                                                        }
-                                                    });
-                                        } catch (Exception e) {}
+                                        TwilioChannel.sync(channel);
                                         EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.GROUP_ADDED));
                                         close();
                                     }

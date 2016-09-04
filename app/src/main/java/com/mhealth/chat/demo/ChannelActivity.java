@@ -1,12 +1,9 @@
 package com.mhealth.chat.demo;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
@@ -34,10 +31,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
-import com.mhealth.chat.demo.twilio.TwilioService;
 import com.twilio.ipmessaging.Channel;
-import com.twilio.ipmessaging.Constants;
-import com.twilio.ipmessaging.Constants.StatusListener;
 import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.IPMessagingClient;
 import com.twilio.ipmessaging.IPMessagingClientListener;
@@ -50,9 +44,6 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 
 @SuppressLint("InflateParams")
 public class ChannelActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener,
@@ -61,10 +52,6 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
 
 
     private static final Logger logger = Logger.getLogger(ChannelActivity.class);
-
-    private static final Handler handler = new Handler();
-    private AlertDialog          incomingChannelInvite;
-    private StatusListener       declineInvitationListener;
 
     @Bind(R.id.tabs)
     TabLayout tabLayout;
@@ -77,7 +64,7 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
     @Bind(R.id.nav_view)
     NavigationView navigationView;
 
-    BasicIPMessagingClient chatClient;
+    TwilioClient chatClient;
 
     @Bind(R.id.toolbar)
     Toolbar toolbar;
@@ -133,20 +120,7 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
     private void updateChannels() {
         try {
             for (Channel channel : chatClient.getIpMessagingClient().getChannels().getChannels()) {
-                TwilioService.getInstance().getChannel(channel.getSid())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.newThread())
-                        .subscribe(new Action1<TwilioChannel>() {
-                            @Override
-                            public void call(TwilioChannel twilioChannel) {
-                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
-                            }
-                        }, new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                throwable.printStackTrace();
-                            }
-                        });
+                TwilioChannel.sync(channel);
             }
         } catch (Exception e) {}
     }
@@ -161,40 +135,13 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
             @Override
             public void onChannelAdd(Channel channel)
             {
-                TwilioService.getInstance().getChannel(channel.getSid())
-                        .observeOn(
-                                AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.newThread())
-                        .subscribe(new Action1<TwilioChannel>() {
-                            @Override
-                            public void call(TwilioChannel twilioChannel) {
-                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
-                            }
-                        }, new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                throwable.printStackTrace();
-                            }
-                        });
+                TwilioChannel.sync(channel);
             }
 
             @Override
             public void onChannelChange(Channel channel)
             {
-                TwilioService.getInstance().getChannel(channel.getSid())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.newThread())
-                        .subscribe(new Action1<TwilioChannel>() {
-                            @Override
-                            public void call(TwilioChannel twilioChannel) {
-                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
-                            }
-                        }, new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                throwable.printStackTrace();
-                            }
-                        });
+                TwilioChannel.sync(channel);
             }
 
             @Override
@@ -352,98 +299,6 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
-        //handleIncomingIntent(getIntent());
-    }
-
-    private boolean handleIncomingIntent(Intent intent)
-    {
-        if (intent != null) {
-            Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
-            String  action = intent.getStringExtra(Constants.EXTRA_ACTION);
-            intent.removeExtra(Constants.EXTRA_CHANNEL);
-            intent.removeExtra(Constants.EXTRA_ACTION);
-            if (action != null) {
-                if (action.compareTo(Constants.EXTRA_ACTION_INVITE) == 0) {
-                    this.showIncomingInvite(channel);
-                }
-            }
-        }
-        return false;
-    }
-
-    private void showIncomingInvite(final Channel channel)
-    {
-        handler.post(new Runnable() {
-            @Override
-            public void run()
-            {
-                if (incomingChannelInvite == null) {
-                    incomingChannelInvite =
-                            new AlertDialog.Builder(ChannelActivity.this)
-                                    .setTitle(R.string.incoming_call)
-                                    .setMessage(R.string.incoming_call_message)
-                                    .setPositiveButton(
-                                            R.string.join,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which)
-                                                {
-                                                    channel.join(new StatusListener() {
-                                                        @Override
-                                                        public void onError(ErrorInfo errorInfo)
-                                                        {
-                                                            MainApplication.get().logErrorInfo(
-                                                                    "Failed to join channel", errorInfo);
-                                                        }
-
-                                                        @Override
-                                                        public void onSuccess()
-                                                        {
-                                                            //TODO notify update list
-                                                            logger.d("Successfully joined channel");
-                                                        }
-                                                    });
-                                                    incomingChannelInvite = null;
-                                                }
-                                            })
-                                    .setNegativeButton(
-                                            R.string.decline,
-                                            new DialogInterface.OnClickListener() {
-
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which)
-                                                {
-                                                    declineInvitationListener = new StatusListener() {
-
-                                                        @Override
-                                                        public void onError(ErrorInfo errorInfo)
-                                                        {
-                                                            MainApplication.get().logErrorInfo(
-                                                                    "Failed to decline channel invite", errorInfo);
-                                                        }
-
-                                                        @Override
-                                                        public void onSuccess()
-                                                        {
-                                                            logger.d("Successfully declined channel invite");
-                                                        }
-
-                                                    };
-                                                    channel.declineInvitation(declineInvitationListener);
-                                                    incomingChannelInvite = null;
-                                                }
-                                            })
-                                    .create();
-                    incomingChannelInvite.show();
-                }
-            }
-        });
     }
 
     @Override

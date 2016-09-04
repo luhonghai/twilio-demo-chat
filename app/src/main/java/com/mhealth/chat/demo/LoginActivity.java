@@ -17,6 +17,7 @@ import com.google.gson.JsonObject;
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.ion.Ion;
 import com.mhealth.chat.demo.data.UserPreference;
+import com.mhealth.chat.demo.event.MessageClientEvent;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.UserInfo;
 
@@ -39,12 +40,14 @@ import android.view.View;
 import android.widget.Toast;
 import android.preference.PreferenceManager;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 
-public class LoginActivity extends FragmentActivity implements BasicIPMessagingClient.LoginListener,
+public class LoginActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener
 {
 
@@ -53,7 +56,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     private ProgressDialog         progressDialog;
     private String                 accessToken = null;
-    private BasicIPMessagingClient chatClient;
+    private TwilioClient chatClient;
     private String                 endpoint_id = "";
 
     private boolean           isReceiverRegistered;
@@ -64,14 +67,13 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     private GoogleSignInAccount acct;
 
-    private UserPreference userPreference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        userPreference = new UserPreference(this);
+        EventBus.getDefault().register(this);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .requestProfile()
@@ -109,14 +111,13 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
                 startActivityForResult(signInIntent, RC_SIGN_IN);
             }
         });
+
         if (checkPlayServices()) {
             // Start IntentService to register this application with GCM.
             Intent intent = new Intent(this, RegistrationIntentService.class);
             startService(intent);
         }
     }
-
-
 
     private void loginTwilio(GoogleSignInAccount acct) {
         this.acct = acct;
@@ -133,7 +134,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
                 .build()
                 .toString();
         logger.d("url string : " + url);
-        new GetAccessTokenAsyncTask().execute(url);
+        LoginActivity.this.chatClient.doLogin(url);
     }
 
     @Override
@@ -141,43 +142,6 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     }
 
-    private class GetAccessTokenAsyncTask extends AsyncTask<String, Void, String>
-    {
-        private String urlString;
-
-        @Override
-        protected void onPostExecute(String result)
-        {
-            super.onPostExecute(result);
-
-            LoginActivity.this.chatClient.doLogin(accessToken, LoginActivity.this, urlString);
-        }
-
-        @Override
-        protected void onPreExecute()
-        {
-            super.onPreExecute();
-            LoginActivity.this.progressDialog =
-                    ProgressDialog.show(LoginActivity.this, "", "Logging in. Please wait...", true);
-        }
-
-        @Override
-        protected String doInBackground(String... params)
-        {
-            try {
-                urlString = params[0];
-                accessToken = new UserPreference(LoginActivity.this).getAccessToken();
-                if (accessToken.isEmpty()) {
-                    accessToken = new Gson().fromJson(HttpHelper.httpGet(params[0]), TokenData.class).getToken();
-                    new UserPreference(LoginActivity.this).setAccessToken(accessToken);
-                }
-                chatClient.setAccessToken(accessToken);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return accessToken;
-        }
-    }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -237,40 +201,15 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         }
     }
 
-    @Override
-    public void onLoginStarted()
+    @Subscribe
+    public void onMessageClientEvent(MessageClientEvent event)
     {
-        logger.d("Log in started");
-    }
-
-    @Override
-    public void onLoginFinished()
-    {
-        if (acct != null && chatClient.getIpMessagingClient() != null) {
-            Ion.with(this)
-                    .load(getString(R.string.api_url) + "/token.php")
-                    .addQuery("identity", chatClient.getIpMessagingClient().getMyUserInfo().getIdentity())
-                    .asJsonObject()
-                    .setCallback(new FutureCallback<JsonObject>() {
-                        @Override
-                        public void onCompleted(final Exception e, final JsonObject result) {
-                            LoginActivity.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (e == null) {
-                                        String accessToken = result.get("token").getAsString();
-                                        logger.d("Receive video token " + accessToken);
-                                        userPreference.setVideoAccessToken(accessToken);
-                                    } else {
-                                        Toast.makeText(LoginActivity.this,
-                                                R.string.error_retrieving_access_token, Toast.LENGTH_SHORT)
-                                                .show();
-                                    }
-                                    doFinishLogin();
-                                }
-                            });
-                        }
-                    });
+        if (event.getType() == MessageClientEvent.Type.READY
+                && acct != null && chatClient.getIpMessagingClient() != null) {
+            doFinishLogin();
+        } else {
+            Toast.makeText(getBaseContext(), "Could not login. Please try again!", Toast.LENGTH_LONG).show();
+            Auth.GoogleSignInApi.signOut(mGoogleApiClient);
         }
     }
 
@@ -319,35 +258,13 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         this.finish();
     }
 
-    public String getBase64FromBitmap(Bitmap bitmap)
-    {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-        String string = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
-        // int    size = string.length();
-        return string;
-    }
-
-    @Override
-    public void onLoginError(String errorMessage)
-    {
-        progressDialog.dismiss();
-        logger.e("Error logging in : " + errorMessage);
-        Toast.makeText(getBaseContext(), errorMessage, Toast.LENGTH_LONG).show();
-    }
-
     @Override
     protected void onDestroy() {
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
+        EventBus.getDefault().unregister(this);
         super.onDestroy();
-    }
-
-    @Override
-    public void onLogoutFinished()
-    {
-        logger.d("Log out finished");
     }
 
     @Override

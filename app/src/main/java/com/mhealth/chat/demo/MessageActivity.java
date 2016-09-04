@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -35,8 +34,6 @@ import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.Messages;
 import com.twilio.ipmessaging.internal.Logger;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -116,14 +113,12 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         super.onCreate(savedInstanceState);
         userInfoDialog = new UserInfoDialog(this);
         createUI();
-        EventBus.getDefault().register(this);
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventBus.getDefault().unregister(this);
         if (userInfoDialog != null) {
             userInfoDialog.dismiss();
         }
@@ -149,11 +144,6 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         }
     }
 
-    @Subscribe
-    public void onHangup(HangupEvent event) {
-
-    }
-
     private void createUI()
     {
         if (MainApplication.get().getBasicClient().getIpMessagingClient() == null) {
@@ -166,7 +156,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("");
         if (getIntent() != null) {
-            BasicIPMessagingClient basicClient = MainApplication.get().getBasicClient();
+            TwilioClient basicClient = MainApplication.get().getBasicClient();
             identity = basicClient.getIpMessagingClient().getMyUserInfo().getIdentity();
             String   channelSid = getIntent().getStringExtra("C_SID");
             Channels channelsObject = basicClient.getIpMessagingClient().getChannels();
@@ -1031,11 +1021,6 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         logger.d("Received onSynchronizationChange callback " + channel.getFriendlyName());
     }
 
-    @Subscribe
-    public void onCallEvent(CallEvent event) {
-
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -1045,13 +1030,6 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
                 this.finish();
             }
         }
-    }
-
-    public void doCall(String target) {
-        Intent intent = new Intent(this, ConversationActivity.class);
-        intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
-        intent.putExtra(ConversationActivity.TARGET_IDENTITY, target);
-        startActivity(intent);
     }
 
     public static class MessageItem
