@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Channels;

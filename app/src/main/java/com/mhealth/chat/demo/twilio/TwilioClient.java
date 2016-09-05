@@ -1,4 +1,4 @@
-package com.mhealth.chat.demo;
+package com.mhealth.chat.demo.twilio;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -9,6 +9,9 @@ import android.os.Looper;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.mhealth.chat.demo.HttpHelper;
+import com.mhealth.chat.demo.Logger;
+import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.data.UserPreference;
 import com.mhealth.chat.demo.event.MessageClientEvent;
 import com.mhealth.chat.demo.service.MessageIncomingService;
@@ -39,6 +42,8 @@ public class TwilioClient
     private Context       context;
     private AccessManager accessManager;
     private String        urlString;
+
+    private boolean isReady;
 
     public TwilioClient(Context context)
     {
@@ -105,12 +110,14 @@ public class TwilioClient
                             0);
             ipMessagingClient.setIncomingIntent(pendingIntent);
             EventBus.getDefault().post(new MessageClientEvent(MessageClientEvent.Type.READY, ipMessagingClient));
+            isReady = true;
         }
 
         @Override
         public void onError(ErrorInfo errorInfo) {
             MainApplication.get().showError(errorInfo);
             EventBus.getDefault().post(new MessageClientEvent(MessageClientEvent.Type.ERROR, ipMessagingClient));
+            isReady = false;
         }
     };
 
@@ -308,6 +315,14 @@ public class TwilioClient
             throw new IllegalArgumentException("Channel Listener must have a Looper.");
         }
         return handler;
+    }
+
+    public boolean isReady() {
+        return isReady;
+    }
+
+    public void setReady(boolean ready) {
+        isReady = ready;
     }
 
     private class GetAccessTokenAsyncTask extends AsyncTask<String, Void, String>

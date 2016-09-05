@@ -11,17 +11,13 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.gson.Gson;
 
-import com.google.gson.JsonObject;
-import com.koushikdutta.async.future.FutureCallback;
-import com.koushikdutta.ion.Ion;
 import com.mhealth.chat.demo.data.UserPreference;
 import com.mhealth.chat.demo.event.MessageClientEvent;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.UserInfo;
 
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.Settings.Secure;
 import android.support.annotation.NonNull;
@@ -33,9 +29,7 @@ import android.content.SharedPreferences;
 import android.content.IntentFilter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.widget.Toast;
 import android.preference.PreferenceManager;
@@ -44,8 +38,6 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
 
 public class LoginActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener

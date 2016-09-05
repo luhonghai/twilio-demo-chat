@@ -31,6 +31,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.IPMessagingClient;

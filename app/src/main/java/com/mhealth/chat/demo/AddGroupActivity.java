@@ -2,7 +2,6 @@ package com.mhealth.chat.demo;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.widget.ImageView;
@@ -14,6 +13,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.mhealth.chat.demo.adapter.IconAdapter;
 import com.mhealth.chat.demo.adapter.IconViewListener;
 import com.mhealth.chat.demo.data.TwilioChannel;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;

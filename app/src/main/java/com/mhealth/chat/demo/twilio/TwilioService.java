@@ -4,11 +4,9 @@ import android.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.TwilioMeta;
 import com.mhealth.chat.demo.data.TwilioUser;
-import com.mhealth.chat.demo.data.UserPreference;
 
 import java.io.IOException;
 import java.util.List;

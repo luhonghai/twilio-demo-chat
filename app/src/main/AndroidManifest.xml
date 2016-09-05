@@ -76,6 +76,7 @@
             android:parentActivityName=".MessageActivity"/>
         <activity android:name=".ConversationActivity"
             />
+        <service android:name=".service.MessageIncomingService"/>
     </application>
 
 </manifest>
