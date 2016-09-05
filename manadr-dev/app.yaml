@@ -28,5 +28,8 @@ handlers:
 - url: /token_ipm\.php
   script: token_ipm.php
 
+- url: /twilio_token\.php
+  script: twilio_token.php
+
 - url: /token\.php
   script: token.php
