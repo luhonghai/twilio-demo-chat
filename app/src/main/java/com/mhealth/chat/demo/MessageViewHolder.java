@@ -95,7 +95,8 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
             {
                 OnMessageClickListener listener = getListener(OnMessageClickListener.class);
                 if (listener != null) {
-                    listener.onMessageClicked(getItem());
+                    MessageActivity.MessageItem item = getItem();
+                    listener.onMessageClicked(item);
                     return true;
                 }
                 return false;
@@ -225,9 +226,9 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                     && mCal.get(Calendar.YEAR) == today.get(Calendar.YEAR)) {
                 sdfOut  = new SimpleDateFormat("HH:mm", Locale.US);
             } else if (mCal.get(Calendar.YEAR) != today.get(Calendar.YEAR)) {
-                sdfOut =  new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US);
+                sdfOut =  new SimpleDateFormat("HH:mm, dd MMM yyyy", Locale.US);
             } else {
-                sdfOut = new SimpleDateFormat("dd MMM, HH:mm", Locale.US);
+                sdfOut = new SimpleDateFormat("HH:mm, dd MMM", Locale.US);
             }
             return sdfOut.format(date);
         } catch (Exception e) {

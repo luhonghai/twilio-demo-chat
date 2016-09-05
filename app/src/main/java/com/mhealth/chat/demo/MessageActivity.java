@@ -5,9 +5,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
+import android.text.method.KeyListener;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -21,6 +24,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.data.TwilioChannel;
+import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
@@ -34,6 +40,7 @@ import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.Messages;
 import com.twilio.ipmessaging.internal.Logger;
 
+import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -111,6 +118,9 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
     @Bind(R.id.progress_bar)
     View progressBar;
 
+    @Bind(R.id.progress_bar_bottom)
+    View progressBarBottom;
+
     @Bind(R.id.sendButton)
     View btnSend;
 
@@ -173,7 +183,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
                 channel = channelsObject.getChannel(channelSid);
                 if (channel != null) {
                     channel.setListener(MessageActivity.this);
-                    getSupportActionBar().setTitle(channel.getFriendlyName());
+                    updateTitle();
                 }
             }
         }
@@ -195,6 +205,16 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         setupListView(channel);
         messageListView = (ListView)findViewById(R.id.message_list_view);
         setupInput();
+    }
+
+    private void updateTitle() {
+        TwilioChannel twilioChannel = MainApplication.get().getChannelDataPreference().get(channel.getSid());
+        if (twilioChannel != null) {
+            getSupportActionBar().setTitle(twilioChannel.getFriendlyName());
+        } else {
+            getSupportActionBar().setTitle(channel.getFriendlyName());
+        }
+
     }
 
     @Override
@@ -533,25 +553,21 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
 
     private void showUpdateMessageDialog(final Message message)
     {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
-        builder.setView(getLayoutInflater().inflate(R.layout.dialog_edit_message, null))
-            .setPositiveButton(
-                "Update",
-                new DialogInterface.OnClickListener() {
+        new MaterialDialog.Builder(this)
+                .title("Update message")
+                .inputType(InputType.TYPE_CLASS_TEXT)
+                .input("Enter new message", message.getMessageBody(), new MaterialDialog.InputCallback() {
                     @Override
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        String updatedMsg =
-                            ((EditText)editTextDialog.findViewById(R.id.update_message))
-                                .getText()
-                                .toString();
+                    public void onInput(@NonNull MaterialDialog dialog, final CharSequence input) {
+                        final String updatedMsg = input.toString();
+                        if (updatedMsg.isEmpty()) return;
                         message.updateMessageBody(updatedMsg, new StatusListener() {
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
                                 MainApplication.get().showError(errorInfo);
                                 MainApplication.get().logErrorInfo("Error updating message",
-                                                                     errorInfo);
+                                        errorInfo);
                             }
 
                             @Override
@@ -569,14 +585,9 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
                         });
                     }
                 })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    dialog.cancel();
-                }
-            });
-        editTextDialog = builder.create();
-        editTextDialog.show();
+                .positiveText("Update")
+                .negativeText("Cancel")
+                .show();
     }
 
     private void showUpdateMessageAttributesDialog(final Message message)
@@ -837,44 +848,42 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         @Override
         public void onMessageClicked(final MessageItem message)
         {
-            AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
-            builder.setTitle("Select an option")
-                    .setItems(MESSAGE_OPTIONS, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which)
-                        {
-                            if (which == REMOVE) {
-                                dialog.cancel();
-                                channel.getMessages().removeMessage(
-                                        message.getMessage(), new StatusListener() {
-                                            @Override
-                                            public void onError(ErrorInfo errorInfo)
-                                            {
-                                                MainApplication.get().showError(errorInfo);
-                                                MainApplication.get().logErrorInfo(
-                                                        "Error removing message", errorInfo);
-                                            }
+            if (message.getCurrentUser().equalsIgnoreCase(message.getMessage().getAuthor())) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
+                builder.setTitle("Select an option")
+                        .setItems(MESSAGE_OPTIONS, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (which == REMOVE) {
+                                    dialog.cancel();
+                                    channel.getMessages().removeMessage(
+                                            message.getMessage(), new StatusListener() {
+                                                @Override
+                                                public void onError(ErrorInfo errorInfo) {
+                                                    MainApplication.get().showError(errorInfo);
+                                                    MainApplication.get().logErrorInfo(
+                                                            "Error removing message", errorInfo);
+                                                }
 
-                                            @Override
-                                            public void onSuccess()
-                                            {
-                                                logger.d(
-                                                        "Successfully removed message. It should be GONE!!");
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run()
-                                                    {
-                                                        messageItemList.remove(message);
-                                                        adapter.notifyDataSetChanged();
-                                                    }
-                                                });
-                                            }
-                                        });
-                            } else if (which == EDIT) {
-                                showUpdateMessageDialog(message.getMessage());
+                                                @Override
+                                                public void onSuccess() {
+                                                    logger.d(
+                                                            "Successfully removed message. It should be GONE!!");
+                                                    runOnUiThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            messageItemList.remove(message);
+                                                            adapter.notifyDataSetChanged();
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                } else if (which == EDIT) {
+                                    showUpdateMessageDialog(message.getMessage());
+                                }
                             }
-                        }
-                    });
-            builder.show();
+                        });
+                builder.show();
+            }
         }
 
         @Override
@@ -908,8 +917,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         if (!input.equals("")) {
             final Messages messagesObject = this.channel.getMessages();
             inputText.setText("");
-            inputText.setEnabled(false);
-            btnSend.setEnabled(false);
+            progressBarBottom.setVisibility(View.VISIBLE);
             new AsyncTask<Void, Void, Void>() {
                 @Override
                 protected Void doInBackground(Void... params) {
@@ -922,8 +930,8 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    inputText.setEnabled(true);
-                                    btnSend.setEnabled(true);
+                                    inputText.requestFocus();
+                                    progressBarBottom.setVisibility(View.GONE);
                                 }
                             });
                         }
@@ -936,8 +944,8 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
                                 @Override
                                 public void run()
                                 {
-                                    inputText.setEnabled(true);
-                                    btnSend.setEnabled(true);
+                                    inputText.requestFocus();
+                                    progressBarBottom.setVisibility(View.GONE);
                                 }
                             });
                         }
@@ -955,6 +963,14 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
             return adapter.getItem(pos);
         }
         return null;
+    }
+
+    @Subscribe
+    public void onChannelUpdated(ChannelEvent channelEvent) {
+        Channel mChannel = channelEvent.getChannel();
+        if (mChannel != null && channel != null && channel.getSid().equalsIgnoreCase(mChannel.getSid())) {
+            updateTitle();
+        }
     }
 
     @Override
@@ -1029,7 +1045,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
     {
         if (member != null) {
             TextView typingIndc = (TextView)findViewById(R.id.typingIndicator);
-            String   text = member.getUserInfo().getIdentity() + " is typing .....";
+            String   text = member.getUserInfo().getIdentity() + " is typing ...";
             typingIndc.setText(text);
             logger.d(text);
         }

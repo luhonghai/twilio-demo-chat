@@ -20,6 +20,7 @@ import com.mhealth.chat.demo.adapter.IconViewListener;
 import com.mhealth.chat.demo.adapter.SelectMemberAdapter;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.TwilioUser;
+import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.twilio.TwilioService;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.nostra13.universalimageloader.core.ImageLoader;
@@ -34,6 +35,7 @@ import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.UserInfo;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -120,8 +122,7 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
             twilioChannel = MainApplication.get().getChannelDataPreference().get(currentChannel.getSid());
             showGroupInfo();
             if (twilioChannel == null) {
-                loadChannelInfo();
-
+                loadChannelInfo(false);
                 subscriptionUser = TwilioService.getInstance().listUsers(1000, 0)
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribeOn(Schedulers.newThread())
@@ -148,7 +149,7 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
         }
     }
 
-    private void loadChannelInfo() {
+    private void loadChannelInfo(final boolean notify) {
         subscription = TwilioService.getInstance().getChannel(currentChannel.getSid())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.newThread())
@@ -158,6 +159,11 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
                         ChannelDetailActivity.this.twilioChannel = twilioChannel;
                         MainApplication.get().getChannelDataPreference().put(twilioChannel);
                         showAdditionalInfo();
+                        showGroupInfo();
+                        if (notify) {
+                            EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.CHANNELS_UPDATED));
+                            EventBus.getDefault().post(new ChannelEvent(ChannelEvent.Type.UPDATED, currentChannel));
+                        }
                     }
                 }, new Action1<Throwable>() {
                     @Override
@@ -182,13 +188,24 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
                             currentChannel.setFriendlyName(name, new Constants.StatusListener() {
                                 @Override
                                 public void onSuccess() {
-                                    txtName.setText(name);
-                                    dialog.dismiss();
-                                    loadChannelInfo();
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            txtName.setText(name);
+                                            dialog.dismiss();
+                                            loadChannelInfo(true);
+                                        }
+                                    });
                                 }
 
                                 @Override
                                 public void onError(ErrorInfo errorInfo) {
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            dialog.dismiss();
+                                        }
+                                    });
                                     MainApplication.get().showError(errorInfo);
                                 }
                             });
@@ -530,11 +547,12 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
                 public void onSuccess() {
                     currentChannel.synchronize(new Constants.CallbackListener<Channel>() {
                         @Override
-                        public void onSuccess(Channel channel) {
+                        public void onSuccess(final Channel channel) {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.CHANNELS_UPDATED));
+                                    EventBus.getDefault().post(new ChannelEvent(ChannelEvent.Type.UPDATED, channel));
                                 }
                             });
 

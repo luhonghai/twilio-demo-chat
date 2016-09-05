@@ -28,6 +28,7 @@ public class ChannelEvent {
 
     public enum Type {
         INVITE(Constants.EXTRA_ACTION_INVITE),
+        UPDATED("UPDATED"),
         NONE("")
         ;
         String name;
