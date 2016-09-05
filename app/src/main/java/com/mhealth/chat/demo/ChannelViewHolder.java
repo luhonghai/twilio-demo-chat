@@ -1,18 +1,13 @@
 package com.mhealth.chat.demo;
 
-import com.mhealth.chat.demo.data.TwilioChannel;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.twilio.ipmessaging.Channel;
-import com.twilio.ipmessaging.Channel.ChannelStatus;
-import com.twilio.ipmessaging.Constants;
-
-import android.graphics.Color;
-import android.graphics.drawable.Icon;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.json.JSONException;
+import com.mhealth.chat.demo.data.TwilioChannel;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.Channel.ChannelStatus;
 
 import uk.co.ribot.easyadapter.ItemViewHolder;
 import uk.co.ribot.easyadapter.PositionInfo;

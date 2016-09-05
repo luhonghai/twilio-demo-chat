@@ -61,6 +61,7 @@ public class SelectMemberAdapter extends RecyclerView.Adapter<SelectMemberViewHo
         fillUserAvatar(holder.imageView, member);
         holder.memberName.setText(getMemberName(member.getUserInfo()));
         holder.cardItem.setTag(member);
+        holder.viewSelected.setVisibility(selectedMembers.contains(member) ? View.VISIBLE : View.GONE);
     }
 
     private String getMemberName(UserInfo userInfo) {

@@ -120,6 +120,7 @@ public class LoginActivity extends FragmentActivity implements
     }
 
     private void loginTwilio(GoogleSignInAccount acct) {
+        progressDialog = ProgressDialog.show(LoginActivity.this, "", "Verify login information. Please wait...", true);
         this.acct = acct;
         String idChosen = acct.getEmail();
         logger.d("User id " + idChosen);
@@ -176,12 +177,16 @@ public class LoginActivity extends FragmentActivity implements
             opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
                 @Override
                 public void onResult(GoogleSignInResult googleSignInResult) {
-                    if (progressDialog != null && progressDialog.isShowing()) {
-                        progressDialog.dismiss();
-                    }
+                    dismissProgressDialog();
                     handleSignInResult(googleSignInResult);
                 }
             });
+        }
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
         }
     }
 
@@ -204,6 +209,7 @@ public class LoginActivity extends FragmentActivity implements
     @Subscribe
     public void onMessageClientEvent(MessageClientEvent event)
     {
+        dismissProgressDialog();
         if (event.getType() == MessageClientEvent.Type.READY
                 && acct != null && chatClient.getIpMessagingClient() != null) {
             doFinishLogin();

@@ -11,12 +11,17 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.mhealth.chat.demo.util.DatetimeUtils;
 import com.mhealth.chat.demo.util.DrawableUtils;
 import com.twilio.ipmessaging.Member;
 import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.UserInfo;
 
-import org.json.JSONObject;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import uk.co.ribot.easyadapter.ItemViewHolder;
 import uk.co.ribot.easyadapter.PositionInfo;
@@ -26,6 +31,9 @@ import uk.co.ribot.easyadapter.annotations.ViewId;
 @LayoutId(R.layout.message_item_layout)
 public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageItem>
 {
+
+    private static final long MESSAGE_TIMESTAMP_RANGE = 2 * 60 * 60 * 1000; // 2 hours
+
     private static int[] HORIZON_COLORS = {
         Color.GRAY, Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA
     };
@@ -41,6 +49,9 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
 
     @ViewId(R.id.txt_author)
     TextView author;
+
+    @ViewId(R.id.txt_timestamp)
+    TextView timestamp;
 
     @ViewId(R.id.chat)
     View viewChat;
@@ -163,12 +174,66 @@ public class MessageViewHolder extends ItemViewHolder<MessageActivity.MessageIte
                         } else {
                             author.setVisibility(View.GONE);
                         }
+                        if ((isFirstAuthorMessage(view.getContext(), message, pos)
+                                && !isLastAuthorMessage(view.getContext(), message, pos))
+                                || isVisibleMessage(view.getContext(), message, pos)) {
+                            timestamp.setVisibility(View.VISIBLE);
+                            timestamp.setText(getTimestamp(message));
+                        } else {
+                            timestamp.setVisibility(View.GONE);
+                        }
                     }
                 }
                 messageStatus.setVisibility((isReaded || !msg.getAuthor().equalsIgnoreCase(message.getCurrentUser()) ?
                         View.INVISIBLE : View.VISIBLE));
             }
         }
+    }
+
+    private boolean isVisibleMessage(Context context, MessageActivity.MessageItem messageItem, PositionInfo pos) {
+        if (pos.isFirst()) return true;
+        if (context instanceof MessageItemAdapter) {
+            MessageItemAdapter adapter = (MessageItemAdapter) context;
+            MessageActivity.MessageItem prevItem = adapter.getMessageItemByPosition(pos.getPosition() - 1);
+            if (prevItem != null) {
+                try {
+                    Date mCurrentDate = DatetimeUtils.getMessageTimestamp(messageItem.getMessage());
+                    Date mPrevDate = DatetimeUtils.getMessageTimestamp(prevItem.getMessage());
+                    return  ((mCurrentDate.getTime() - mPrevDate.getTime()) >= MESSAGE_TIMESTAMP_RANGE);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+        } else {
+            Log.d("MessageViewHolder", "isFirstAuthorMessage: context do not implement MessageItemAdapter");
+        }
+        return false;
+    }
+
+    private String getTimestamp(MessageActivity.MessageItem messageItem) {
+        String timestamp = messageItem.getMessage().getTimeStamp();
+        try {
+            Date date = DatetimeUtils.getMessageTimestamp(messageItem.getMessage());
+            Calendar mCal = Calendar.getInstance();
+            mCal.setTime(date);
+            Calendar today = Calendar.getInstance();
+            today.setTimeInMillis(System.currentTimeMillis());
+            SimpleDateFormat sdfOut;
+            if (mCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
+                    && mCal.get(Calendar.DATE) == today.get(Calendar.DATE)
+                    && mCal.get(Calendar.YEAR) == today.get(Calendar.YEAR)) {
+                sdfOut  = new SimpleDateFormat("HH:mm", Locale.US);
+            } else if (mCal.get(Calendar.YEAR) != today.get(Calendar.YEAR)) {
+                sdfOut =  new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US);
+            } else {
+                sdfOut = new SimpleDateFormat("dd MMM, HH:mm", Locale.US);
+            }
+            return sdfOut.format(date);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return timestamp;
     }
 
     private String getMemberName(UserInfo userInfo) {

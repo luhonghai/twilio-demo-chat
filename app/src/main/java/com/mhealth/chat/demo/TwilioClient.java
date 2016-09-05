@@ -44,6 +44,10 @@ public class TwilioClient
     {
         super();
         this.context = context;
+        if(!TwilioConversationsClient.isInitialized()) {
+            TwilioConversationsClient.setLogLevel(LogLevel.ERROR);
+            TwilioConversationsClient.initialize(context);
+        }
     }
 
     private AccessManager.Listener accessManagerListener = new AccessManager.Listener() {
@@ -69,11 +73,6 @@ public class TwilioClient
                     accessManager,
                     props,
                     ipMessagingClientCallbackListener);
-
-            if(!TwilioConversationsClient.isInitialized()) {
-                TwilioConversationsClient.setLogLevel(LogLevel.ERROR);
-                TwilioConversationsClient.initialize(context);
-            }
 
             conversationsClient =
                     TwilioConversationsClient.create(accessManager,
@@ -103,7 +102,7 @@ public class TwilioClient
                     PendingIntent.getService(context,
                             0,
                             new Intent(context, MessageIncomingService.class),
-                            PendingIntent.FLAG_UPDATE_CURRENT);
+                            0);
             ipMessagingClient.setIncomingIntent(pendingIntent);
             EventBus.getDefault().post(new MessageClientEvent(MessageClientEvent.Type.READY, ipMessagingClient));
         }
@@ -322,7 +321,7 @@ public class TwilioClient
                 ipMessagingClient.updateToken(accessToken, new StatusListener() {
                     @Override
                     public void onSuccess() {
-                        logger.d("Updated Token was successfull");
+                        logger.d("Updated Token was successfully");
                     }
 
                     @Override

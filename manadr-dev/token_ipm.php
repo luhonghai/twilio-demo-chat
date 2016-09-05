@@ -5,6 +5,7 @@ include('./randos.php');
 
 use Twilio\Jwt\AccessToken;
 use Twilio\Jwt\Grants\IpMessagingGrant;
+use Twilio\Jwt\Grants\ConversationsGrant;
 
 // An identifier for your app - can be anything you'd like
 $appName = 'TwilioChatDemo';
@@ -29,6 +30,11 @@ $grant->setServiceSid($TWILIO_IPM_SERVICE_SID);
 $grant->setEndpointId($endpointId);
 $grant->setPushCredentialSid('CR652d1ad71f1e86cca89dbc9a9f2fd4c1');
 $token->addGrant($grant);
+
+// Grant access to Conversation
+$grantConversation = new ConversationsGrant();
+$grantConversation->setConfigurationProfileSid($TWILIO_CONFIGURATION_SID);
+$token->addGrant($grantConversation);
 
 // return serialized token and the user's randomly generated ID
 echo json_encode(array(

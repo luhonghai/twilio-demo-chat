@@ -120,23 +120,7 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
             twilioChannel = MainApplication.get().getChannelDataPreference().get(currentChannel.getSid());
             showGroupInfo();
             if (twilioChannel == null) {
-                subscription = TwilioService.getInstance().getChannel(currentChannel.getSid())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.newThread())
-                        .subscribe(new Action1<TwilioChannel>() {
-                            @Override
-                            public void call(TwilioChannel twilioChannel) {
-                                ChannelDetailActivity.this.twilioChannel = twilioChannel;
-                                MainApplication.get().getChannelDataPreference().put(twilioChannel);
-                                showAdditionalInfo();
-                            }
-                        }, new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                throwable.printStackTrace();
-                                loadMembers();
-                            }
-                        });
+                loadChannelInfo();
 
                 subscriptionUser = TwilioService.getInstance().listUsers(1000, 0)
                         .observeOn(AndroidSchedulers.mainThread())
@@ -161,6 +145,58 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
             }
         } else {
             this.finish();
+        }
+    }
+
+    private void loadChannelInfo() {
+        subscription = TwilioService.getInstance().getChannel(currentChannel.getSid())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.newThread())
+                .subscribe(new Action1<TwilioChannel>() {
+                    @Override
+                    public void call(TwilioChannel twilioChannel) {
+                        ChannelDetailActivity.this.twilioChannel = twilioChannel;
+                        MainApplication.get().getChannelDataPreference().put(twilioChannel);
+                        showAdditionalInfo();
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        throwable.printStackTrace();
+                        loadMembers();
+                    }
+                });
+    }
+
+    @OnClick(R.id.channel_friendly_name)
+    public void clickGroupName() {
+        if (isAdmin()) {
+            new MaterialDialog.Builder(this)
+                    .title("Rename group")
+                    .inputType(InputType.TYPE_CLASS_TEXT)
+                    .input("New group name", txtName.getText().toString(), new MaterialDialog.InputCallback() {
+                        @Override
+                        public void onInput(@NonNull final MaterialDialog dialog, final CharSequence input) {
+                            final String name = input.toString();
+                            if (name.isEmpty()) return;
+                            currentChannel.setFriendlyName(name, new Constants.StatusListener() {
+                                @Override
+                                public void onSuccess() {
+                                    txtName.setText(name);
+                                    dialog.dismiss();
+                                    loadChannelInfo();
+                                }
+
+                                @Override
+                                public void onError(ErrorInfo errorInfo) {
+                                    MainApplication.get().showError(errorInfo);
+                                }
+                            });
+                        }
+                    })
+                    .positiveText("Rename")
+                    .negativeText("Cancel")
+                    .show();
         }
     }
 
