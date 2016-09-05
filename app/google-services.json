@@ -1,71 +1,27 @@
 {
   "project_info": {
-    "project_number": "1065243456785",
-    "firebase_url": "https://test-project-40271.firebaseio.com",
-    "project_id": "test-project-40271",
-    "storage_bucket": "test-project-40271.appspot.com"
+    "project_number": "586214253481",
+    "firebase_url": "https://appointment-app-26bf4.firebaseio.com",
+    "project_id": "appointment-app-26bf4",
+    "storage_bucket": "appointment-app-26bf4.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1065243456785:android:62a4ad0438a4458e",
+        "mobilesdk_app_id": "1:586214253481:android:3a30d4fd2b68ca3f",
         "android_client_info": {
-          "package_name": "com.innovatube.manadr"
+          "package_name": "com.mhealth.manadr"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1065243456785-75pl48blsvqm874luud9magavdqu7sid.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.innovatube.manadr",
-            "certificate_hash": "4A49F6013665E8C300BB47A38FA07C48BE86F884"
-          }
-        },
-        {
-          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_id": "586214253481-h0278st45ikomdkmqva9qddubo5aau70.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
-        }
-      ],
-      "services": {
-        "analytics_service": {
-          "status": 1
-        },
-        "appinvite_service": {
-          "status": 2,
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        },
-        "ads_service": {
-          "status": 2
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1065243456785:android:e0288e11377e3640",
-        "android_client_info": {
-          "package_name": "com.twilio.conversations.quickstart"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+          "current_key": "AIzaSyDap7L38_plKsY7IogUR-BcCO0ld6qhLw4"
         }
       ],
       "services": {
@@ -83,20 +39,20 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1065243456785:android:75524af16f2465fb",
+        "mobilesdk_app_id": "1:586214253481:android:cca8709dddfc18b5",
         "android_client_info": {
-          "package_name": "com.twilio.ipmessaging.demo"
+          "package_name": "com.mhealth.manadr.dev"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_id": "586214253481-h0278st45ikomdkmqva9qddubo5aau70.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+          "current_key": "AIzaSyDap7L38_plKsY7IogUR-BcCO0ld6qhLw4"
         }
       ],
       "services": {
@@ -114,20 +70,51 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1065243456785:android:4650d77c87ae937f",
+        "mobilesdk_app_id": "1:586214253481:android:4faaacb2aac03035",
+        "android_client_info": {
+          "package_name": "com.mhealth.manadr.test"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "586214253481-h0278st45ikomdkmqva9qddubo5aau70.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDap7L38_plKsY7IogUR-BcCO0ld6qhLw4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:586214253481:android:4650d77c87ae937f",
         "android_client_info": {
           "package_name": "com.mhealth.chat.demo"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1065243456785-pd5ib1j31or02to7306l7q57pop99tb1.apps.googleusercontent.com",
+          "client_id": "586214253481-h0278st45ikomdkmqva9qddubo5aau70.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBNBvuFRfONZLqGqxsQ7hve37SeX65CfAE"
+          "current_key": "AIzaSyDap7L38_plKsY7IogUR-BcCO0ld6qhLw4"
         }
       ],
       "services": {

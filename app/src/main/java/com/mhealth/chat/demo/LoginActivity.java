@@ -120,7 +120,7 @@ public class LoginActivity extends FragmentActivity implements
                 Secure.getString(this.getApplicationContext().getContentResolver(), Secure.ANDROID_ID);
         String endpointIdFull =
                 idChosen + "-" + endpoint_id + "-android-" + getApplication().getPackageName();
-        String url = Uri.parse(getString(R.string.api_url) + "/token_ipm.php")
+        String url = Uri.parse(getString(R.string.api_url) + "/twilio_token.php")
                 .buildUpon()
                 .appendQueryParameter("identity", idChosen)
                 .appendQueryParameter("endpointId", endpointIdFull)

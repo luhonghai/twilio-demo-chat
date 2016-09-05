@@ -222,7 +222,8 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                 List<Channel> channelList = new ArrayList<>();
                 if (channelArray != null && channelArray.length > 0) {
                     for (final Channel channel : channelArray) {
-                        if (channel.getType() == getChannelType()) {
+                        if (channel.getType() == getChannelType()
+                                && !channel.getUniqueName().toLowerCase().startsWith("chat_consult_")) {
                             channelList.add(channelsObject.getChannel(channel.getSid()));
                         }
                     }
