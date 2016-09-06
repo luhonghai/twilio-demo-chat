@@ -286,7 +286,6 @@ public class TwilioClient
             @Override
             public void onError(ErrorInfo errorInfo)
             {
-                MainApplication.get().showError(errorInfo);
                 MainApplication.get().logErrorInfo("GCM registration not successful", errorInfo);
             }
 

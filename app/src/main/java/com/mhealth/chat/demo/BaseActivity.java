@@ -2,11 +2,13 @@ package com.mhealth.chat.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.conversations.Conversation;
@@ -38,11 +40,15 @@ import java.util.Set;
 
 public class BaseActivity extends AppCompatActivity {
 
+    private static final long MAX_REQUEST_TIMEOUT = 15000;
+
     protected Logger logger = Logger.getLogger(this.getClass());
 
     private UserInfoDialog callInviteDialog;
 
     private MaterialDialog incomingChannelInvite;
+
+    private Handler handlerTimeout = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -73,6 +79,7 @@ public class BaseActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (callInviteDialog != null) callInviteDialog.dismiss();
         if (incomingChannelInvite != null) incomingChannelInvite.dismiss();
+        handlerTimeout.removeCallbacksAndMessages(null);
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
@@ -214,9 +221,23 @@ public class BaseActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {}
             if (getCurrentConversation() == null) {
+                handlerTimeout.removeCallbacksAndMessages(null);
+                handlerTimeout.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        incomingInvite.reject();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                callInviteDialog.dismiss();
+                            }
+                        });
+                    }
+                }, MAX_REQUEST_TIMEOUT);
                 callInviteDialog.show(member, new UserInfoDialog.UserInfoListener() {
                     @Override
                     public void clickCall(Member member) {
+                        handlerTimeout.removeCallbacksAndMessages(null);
                         callInviteDialog.dismiss();
                         MainApplication.get().setIncomingInvite(incomingInvite);
                         Intent intent = new Intent(BaseActivity.this, ConversationActivity.class);
@@ -226,6 +247,7 @@ public class BaseActivity extends AppCompatActivity {
 
                     @Override
                     public void clickCancelCall(Member member) {
+                        handlerTimeout.removeCallbacksAndMessages(null);
                         callInviteDialog.dismiss();
                         incomingInvite.reject();
                     }
@@ -243,10 +265,17 @@ public class BaseActivity extends AppCompatActivity {
         }
     }
 
-    private void prepareForChatConsult(final String channelName,
+    private void prepareForChatConsult(final String channelSession,
                                        final IncomingInvite incomingInvite) {
         IPMessagingClient messagingClient = MainApplication.get().getBasicClient().getIpMessagingClient();
         Channels channelObject = messagingClient.getChannels();
+        ChatConsultSession session = ChatConsultSession.decodeChannelName(channelSession);
+        final String channelName;
+        if (session != null) {
+            channelName = ChatConsultSession.CHAT_CONSULT_PREFIX + session.getSessionId();
+        } else {
+            channelName = channelSession;
+        }
         logger.d("Chat consult request from member " + incomingInvite.getInviter()
                 + " channel unique name " + channelName);
         final Channel channel = channelObject.getChannelByUniqueName(channelName);
@@ -351,6 +380,19 @@ public class BaseActivity extends AppCompatActivity {
 
     private void showChatConsultInvite(final String channelName,
                                        final IncomingInvite incomingInvite) {
+        handlerTimeout.removeCallbacksAndMessages(null);
+        handlerTimeout.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                incomingInvite.reject();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        callInviteDialog.dismiss();
+                    }
+                });
+            }
+        }, MAX_REQUEST_TIMEOUT);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -358,12 +400,14 @@ public class BaseActivity extends AppCompatActivity {
                 callInviteDialog.show(requestMember, new UserInfoDialog.UserInfoListener() {
                     @Override
                     public void clickCall(Member member) {
+                        handlerTimeout.removeCallbacksAndMessages(null);
                         callInviteDialog.showProgress();
                         prepareForChatConsult(channelName, incomingInvite);
                     }
 
                     @Override
                     public void clickCancelCall(Member member) {
+                        handlerTimeout.removeCallbacksAndMessages(null);
                         callInviteDialog.dismiss();
                         incomingInvite.reject();
                     }
