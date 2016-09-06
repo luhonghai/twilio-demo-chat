@@ -114,25 +114,8 @@ public class ChannelFragment extends Fragment implements ChannelListener {
     {
         super.onResume();
         if (getActivity() != null) {
-            handleIncomingIntent(getActivity().getIntent());
             getChannels();
         }
-    }
-
-    private boolean handleIncomingIntent(Intent intent)
-    {
-        if (intent != null) {
-            Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
-            String  action = intent.getStringExtra(Constants.EXTRA_ACTION);
-            intent.removeExtra(Constants.EXTRA_CHANNEL);
-            intent.removeExtra(Constants.EXTRA_ACTION);
-            if (action != null) {
-                if (action.compareTo(Constants.EXTRA_ACTION_INVITE) == 0) {
-                    this.showIncomingInvite(channel);
-                }
-            }
-        }
-        return false;
     }
 
     private void setupListView(View root)
@@ -223,7 +206,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                 if (channelArray != null && channelArray.length > 0) {
                     for (final Channel channel : channelArray) {
                         if (channel.getType() == getChannelType()
-                                && !channel.getUniqueName().toLowerCase().startsWith("chat_consult_")) {
+                                && !channel.getUniqueName().toLowerCase().startsWith(Constant.CHAT_CONSULT_PREFIX)) {
                             channelList.add(channelsObject.getChannel(channel.getSid()));
                         }
                     }

@@ -629,11 +629,7 @@ public class ConversationActivity extends BaseActivity {
                                             TwilioConversationsException e) {
                 logger.d("onConversationEnded");
                 // If logging out complete the process once conversation has ended
-                if (loggingOut) {
-                    logout();
-                } else {
-                    reset();
-                }
+                logout();
             }
         };
     }

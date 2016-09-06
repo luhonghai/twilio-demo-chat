@@ -33,6 +33,7 @@ import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.IPMessagingClient;
 import com.twilio.ipmessaging.IPMessagingClientListener;
@@ -120,6 +121,15 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
 
     private void updateChannels() {
         try {
+            Channel general = chatClient.getIpMessagingClient().getChannels().getChannelByUniqueName("general");
+            if (general != null && general.getStatus() != Channel.ChannelStatus.JOINED) {
+                general.join(new Constants.StatusListener() {
+                    @Override
+                    public void onSuccess() {
+
+                    }
+                });
+            }
             for (Channel channel : chatClient.getIpMessagingClient().getChannels().getChannels()) {
                 TwilioChannel.sync(channel);
             }

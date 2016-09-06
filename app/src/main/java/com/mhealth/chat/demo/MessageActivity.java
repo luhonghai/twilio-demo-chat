@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.twilio.TwilioClient;
@@ -221,17 +222,53 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
     public boolean onCreateOptionsMenu(Menu menu)
     {
         getMenuInflater().inflate(R.menu.group, menu);
+        if (isChatConsult()) {
+            menu.findItem(R.id.action_video).setVisible(true);
+            menu.findItem(R.id.action_info).setVisible(false);
+        } else {
+            menu.findItem(R.id.action_video).setVisible(false);
+            menu.findItem(R.id.action_info).setVisible(true);
+        }
         return true;
+    }
+
+    private boolean isChatConsult() {
+        if (getIntent() != null) {
+            TwilioClient basicClient = MainApplication.get().getBasicClient();
+            String   channelSid = getIntent().getStringExtra("C_SID");
+            Channels channelsObject = basicClient.getIpMessagingClient().getChannels();
+            if (channelsObject != null) {
+                channel = channelsObject.getChannel(channelSid);
+                if (channel != null && channel.getUniqueName().startsWith(ChatConsultSession.CHAT_CONSULT_PREFIX)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
+        Intent intent;
         switch (item.getItemId()) {
             case R.id.action_info:
-                Intent intent = new Intent(this, ChannelDetailActivity.class);
+                intent = new Intent(this, ChannelDetailActivity.class);
                 intent.putExtra(Channel.class.getName(), channel);
                 startActivityForResult(intent, ActivityResultCommon.ACTION_EDIT_GROUP);
+                break;
+            case R.id.action_video:
+                Member[] members = channel.getMembers().getMembers();
+                for (Member member : members) {
+                    if (!member.getUserInfo().getIdentity().equalsIgnoreCase(identity)) {
+                        intent = new Intent(MessageActivity.this, ConversationActivity.class);
+                        intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
+                        intent.putExtra(ConversationActivity.TARGET_IDENTITY, member.getUserInfo().getIdentity());
+                        startActivity(intent);
+                        break;
+                    }
+                }
+
                 break;
             case R.id.action_settings: showChannelSettingsDialog(); break;
         }

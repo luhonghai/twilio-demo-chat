@@ -4,13 +4,14 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
+import com.mhealth.chat.demo.data.ChatConsultSession;
+import com.twilio.ipmessaging.Channel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,9 +55,20 @@ public class GCMListenerService extends FirebaseMessagingService
                 targetActivity = ChannelActivity.class;
             }
         }
+
         Intent intent = new Intent(this,targetActivity);
-        if (!channelId.isEmpty())
+        if (!channelId.isEmpty()) {
             intent.putExtra("C_SID", channelId);
+            try {
+                Channel channel = MainApplication.get().getBasicClient().getIpMessagingClient().getChannels().getChannel(channelId);
+                if (channel.getUniqueName().toLowerCase().startsWith(ChatConsultSession.CHAT_CONSULT_PREFIX)) {
+                    logger.d("Skip notification of chat consult channel " + channel.getUniqueName());
+                    return;
+                }
+            } catch (Exception e) {
+
+            }
+        }
         if (!channelId.isEmpty() && !currentChannelId.isEmpty()
                 && channelId.equalsIgnoreCase(currentChannelId)) {
             logger.d("Skip notification, user are in current channel " + channelId);

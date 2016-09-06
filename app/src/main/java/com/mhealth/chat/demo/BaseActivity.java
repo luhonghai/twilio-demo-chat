@@ -10,14 +10,27 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.conversations.Conversation;
+import com.twilio.conversations.ConversationCallback;
 import com.twilio.conversations.IncomingInvite;
+import com.twilio.conversations.LocalMedia;
+import com.twilio.conversations.Participant;
+import com.twilio.conversations.TwilioConversationsClient;
+import com.twilio.conversations.TwilioConversationsException;
 import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.Channels;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.ErrorInfo;
+import com.twilio.ipmessaging.IPMessagingClient;
 import com.twilio.ipmessaging.Member;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by luhonghai on 9/1/16.
@@ -130,47 +143,237 @@ public class BaseActivity extends AppCompatActivity {
         });
     }
 
+
     @Subscribe
     public void onIncomingInvite(final IncomingInvite incomingInvite) {
         logger.d("onIncomingInvite");
-        Member member = new Member("", incomingInvite.getInviter(), 0l, null, 0);
+        IPMessagingClient messagingClient = MainApplication.get().getBasicClient().getIpMessagingClient();
+        final String currentUser = messagingClient.getMyUserInfo().getIdentity();
+        messagingClient.getMyUserInfo();
+        Channels channelObject = messagingClient.getChannels();
+        Channel generalChannel = channelObject.getChannelByUniqueName("general");
+
+        Set<String> participants = incomingInvite.getParticipants();
         try {
-            Channel[] channels = MainApplication.get().getBasicClient().getIpMessagingClient().getChannels().getChannels();
-            for (Channel channel : channels) {
-                if (channel.getStatus() == Channel.ChannelStatus.JOINED) {
-                    for (Member m : channel.getMembers().getMembers()) {
-                        if (m.getUserInfo().getIdentity().equalsIgnoreCase(incomingInvite.getInviter())) {
-                            member = m;
+            Field f = incomingInvite.getClass().getDeclaredField("conversation");
+            f.setAccessible(true);
+            Conversation conversation = (Conversation) f.get(incomingInvite);
+            Set<Participant> participantSet = conversation.getParticipants();
+            if (participantSet.size() > 0) {
+                participants = new HashSet<>();
+                for (Participant participant : participantSet) {
+                    logger.d("Found participants from conversation " + participant.getIdentity());
+                    participants.add(participant.getIdentity());
+                }
+                if (generalChannel != null) {
+                    Member[] members = generalChannel.getMembers().getMembers();
+                    for (Member member : members) {
+                        if (member.getUserInfo().getIdentity().equalsIgnoreCase(incomingInvite.getInviter())) {
+                            logger.d("Found member " + incomingInvite.getInviter());
+                            try {
+                                String sessionId = member.getUserInfo().getAttributes().optString("chat_consult_session");
+                                logger.d("Found chat session id " + sessionId);
+                                participants.add(sessionId);
+                            } catch (Exception e) {e.printStackTrace();}
                             break;
                         }
                     }
+                } else {
+                    logger.e("General channel not found");
                 }
             }
-        } catch (Exception e) {}
-        if (getCurrentConversation() == null) {
-            callInviteDialog.show(member, new UserInfoDialog.UserInfoListener() {
-                @Override
-                public void clickCall(Member member) {
-                    MainApplication.get().setIncomingInvite(incomingInvite);
-                    Intent intent = new Intent(BaseActivity.this, ConversationActivity.class);
-                    intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_ACCEPT_CALL);
-                    startActivity(intent);
-                }
-
-                @Override
-                public void clickCancelCall(Member member) {
-                    incomingInvite.reject();
-                }
-
-                @Override
-                public void clickChat(Member member) {
-
-                }
-            }, true);
-        } else {
-            logger.d(String.format("Conversation in progress. Invite from %s ignored",
-                    incomingInvite.getInviter()));
-            incomingInvite.reject();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        String channelName = "";
+        if (participants!= null && participants.size() > 0) {
+            logger.d("Found participants size " + participants.size());
+            for (String participant : participants) {
+                logger.d("Found participant " + participant);
+                if (participant.toLowerCase().startsWith(Constant.CHAT_CONSULT_PREFIX)) {
+                    channelName = participant;
+                    break;
+                }
+            }
+        }
+        if (channelName.length() > 0) {
+            showChatConsultInvite(channelName, incomingInvite);
+        } else {
+            Member member = new Member("", incomingInvite.getInviter(), 0l, null, 0);
+            try {
+                Channel[] channels = channelObject.getChannels();
+                for (Channel channel : channels) {
+                    if (channel.getStatus() == Channel.ChannelStatus.JOINED) {
+                        for (Member m : channel.getMembers().getMembers()) {
+                            if (m.getUserInfo().getIdentity().equalsIgnoreCase(incomingInvite.getInviter())) {
+                                member = m;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {}
+            if (getCurrentConversation() == null) {
+                callInviteDialog.show(member, new UserInfoDialog.UserInfoListener() {
+                    @Override
+                    public void clickCall(Member member) {
+                        callInviteDialog.dismiss();
+                        MainApplication.get().setIncomingInvite(incomingInvite);
+                        Intent intent = new Intent(BaseActivity.this, ConversationActivity.class);
+                        intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_ACCEPT_CALL);
+                        startActivity(intent);
+                    }
+
+                    @Override
+                    public void clickCancelCall(Member member) {
+                        callInviteDialog.dismiss();
+                        incomingInvite.reject();
+                    }
+
+                    @Override
+                    public void clickChat(Member member) {
+
+                    }
+                }, UserInfoDialog.Type.INVITE);
+            } else {
+                logger.d(String.format("Conversation in progress. Invite from %s ignored",
+                        incomingInvite.getInviter()));
+                incomingInvite.reject();
+            }
+        }
+    }
+
+    private void prepareForChatConsult(final String channelName,
+                                       final IncomingInvite incomingInvite) {
+        IPMessagingClient messagingClient = MainApplication.get().getBasicClient().getIpMessagingClient();
+        Channels channelObject = messagingClient.getChannels();
+        logger.d("Chat consult request from member " + incomingInvite.getInviter()
+                + " channel unique name " + channelName);
+        final Channel channel = channelObject.getChannelByUniqueName(channelName);
+        if (channel != null) {
+            if (channel.getStatus() == Channel.ChannelStatus.JOINED) {
+                acceptChatConsult(channel, incomingInvite);
+            } else {
+                channel.join(new Constants.StatusListener() {
+                    @Override
+                    public void onSuccess() {
+                        acceptChatConsult(channel, incomingInvite);
+                    }
+
+                    @Override
+                    public void onError(ErrorInfo errorInfo) {
+                        MainApplication.get().showError(errorInfo);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                callInviteDialog.dismiss();
+                            }
+                        });
+                    }
+                });
+            }
+        } else {
+            logger.e("Could not found this channel. Create new channel " + channelName);
+            Map<String, Object> data = new HashMap<>();
+            data.put("friendlyName", "Chat Consult");
+            data.put("uniqueName", channelName);
+            data.put("ChannelType", Channel.ChannelType.PRIVATE);
+            channelObject.createChannel(data, new Constants.CreateChannelListener() {
+                @Override
+                public void onCreated(final Channel channel) {
+                    channel.join(new Constants.StatusListener() {
+                        @Override
+                        public void onSuccess() {
+                            acceptChatConsult(channel, incomingInvite);
+                        }
+
+                        @Override
+                        public void onError(ErrorInfo errorInfo) {
+                            MainApplication.get().showError(errorInfo);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    callInviteDialog.dismiss();
+                                }
+                            });
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(ErrorInfo errorInfo) {
+                    logger.e("could not create channel " + channelName + " error " + errorInfo.getErrorText());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            callInviteDialog.dismiss();
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    private void acceptChatConsult(final Channel channel, final IncomingInvite incomingInvite) {
+        channel.getMembers().inviteByIdentity(incomingInvite.getInviter(), new Constants.StatusListener() {
+            @Override
+            public void onSuccess() {
+                incomingInvite.accept(new LocalMedia(null), new ConversationCallback() {
+                    @Override
+                    public void onConversation(Conversation conversation, TwilioConversationsException e) {
+                        conversation.disconnect();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                callInviteDialog.dismiss();
+                                Intent intent = new Intent(BaseActivity.this, MessageActivity.class);
+                                intent.putExtra("C_SID", channel.getSid());
+                                startActivity(intent);
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onError(ErrorInfo errorInfo) {
+                MainApplication.get().showError(errorInfo);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        callInviteDialog.dismiss();
+                    }
+                });
+            }
+        });
+
+    }
+
+    private void showChatConsultInvite(final String channelName,
+                                       final IncomingInvite incomingInvite) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Member requestMember = new Member(channelName, "", 0l, null, 0);
+                callInviteDialog.show(requestMember, new UserInfoDialog.UserInfoListener() {
+                    @Override
+                    public void clickCall(Member member) {
+                        callInviteDialog.showProgress();
+                        prepareForChatConsult(channelName, incomingInvite);
+                    }
+
+                    @Override
+                    public void clickCancelCall(Member member) {
+                        callInviteDialog.dismiss();
+                        incomingInvite.reject();
+                    }
+
+                    @Override
+                    public void clickChat(Member member) {
+
+                    }
+                }, UserInfoDialog.Type.CHAT_CONSULT);
+            }
+        });
     }
 }

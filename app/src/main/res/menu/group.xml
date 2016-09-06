@@ -8,4 +8,11 @@
         android:icon="@drawable/ic_info_white_24dp"
         app:showAsAction="always"
         android:title="View group info" />
+    <item
+        android:id="@+id/action_video"
+        android:visible="false"
+        android:icon="@drawable/ic_videocam_white_24dp"
+        app:showAsAction="always"
+        android:title="Start video chat"
+        />
 </menu>
