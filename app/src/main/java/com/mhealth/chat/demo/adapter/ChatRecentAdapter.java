@@ -1,6 +1,8 @@
 package com.mhealth.chat.demo.adapter;
 
+import android.content.Context;
 import android.databinding.DataBindingUtil;
+import android.graphics.Color;
 import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -16,13 +18,15 @@ import java.util.ArrayList;
 /**
  * Created by leanh215 on 9/5/16.
  */
-public class ChatUserAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class ChatRecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    ArrayList<Member> chatUsers;
+    Context mContext;
+    ArrayList<Member> mRecentChatUsers;
 
-    public ChatUserAdapter(ArrayList<Member> chatUsers) {
-        this.chatUsers = chatUsers;
 
+    public ChatRecentAdapter(Context context, ArrayList<Member> recentChatUsers) {
+        mContext = context;
+        mRecentChatUsers = recentChatUsers;
     }
 
     @Override
@@ -35,15 +39,21 @@ public class ChatUserAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         ItemViewHolder itemHolder = (ItemViewHolder) holder;
-        Member member = chatUsers.get(position);
+        Member member = mRecentChatUsers.get(position);
         String avatarUrl = ChatUtils.getAvatarUrl(member);
         itemHolder.mBinding.imgAvatar.setImageURI(Uri.parse(avatarUrl));
         itemHolder.mBinding.tvUsername.setText(member.getUserInfo().getIdentity());
+
+        if (member.getUserInfo().isOnline()) {
+            itemHolder.mBinding.imgOnlineStatus.setColorFilter(mContext.getResources().getColor(R.color.colorPrimary));
+        } else {
+            itemHolder.mBinding.imgOnlineStatus.setColorFilter(Color.GRAY);
+        }
     }
 
     @Override
     public int getItemCount() {
-        return chatUsers.size();
+        return mRecentChatUsers.size();
     }
 
     class ItemViewHolder extends RecyclerView.ViewHolder {

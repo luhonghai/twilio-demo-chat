@@ -9,10 +9,7 @@ import android.support.v7.app.AppCompatActivity;
  */
 public class ActivityIntent extends AppCompatActivity {
 
-    public static final String EXTRA_FRAGMENT_NAME = "EXTRA_FRAGMENT_NAME";
-    public static final String FRAGMENT_CHAT_LIST = "FRAGMENT_CHAT_LIST";
-
-    public static final String FRAGMENT_CHAT_DIRECT = "FRAGMENT_CHAT_DIRECT";
+    public static final String FRAGMENT_CHAT_ONE_ONE = "FRAGMENT_CHAT_ONE_ONE";
     public static final String EXTRA_CHAT_TO_ID = "EXTRA_CHAT_TO_ID";
 
     @Override
@@ -21,7 +18,7 @@ public class ActivityIntent extends AppCompatActivity {
 
         getSupportFragmentManager()
                 .beginTransaction()
-                .add(android.R.id.content, FragmentChatUserList.getInstance())
+                .add(android.R.id.content, FragmentChatRecent.getInstance())
                 .commit();
 
     }

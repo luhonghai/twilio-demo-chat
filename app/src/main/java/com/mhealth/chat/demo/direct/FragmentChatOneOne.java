@@ -21,7 +21,7 @@ import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.R;
 import com.mhealth.chat.demo.adapter.ChatMessageAdapter;
 import com.mhealth.chat.demo.customview.SoftKeyboardHandledLinearLayout;
-import com.mhealth.chat.demo.databinding.FragmentChatWithFriendBinding;
+import com.mhealth.chat.demo.databinding.FragmentChatOneOneBinding;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
@@ -37,11 +37,11 @@ import java.util.Map;
 /**
  * Created by leanh215 on 9/6/16.
  */
-public class FragmentChatWithFriend extends Fragment {
+public class FragmentChatOneOne extends Fragment implements ChannelListener{
 
     private static final int LOAD_HISTORY_SIZE = 15;
 
-    FragmentChatWithFriendBinding mBinding;
+    FragmentChatOneOneBinding mBinding;
     String mFriendId;
     Member mFriend;
     TwilioClient mClient;
@@ -52,23 +52,23 @@ public class FragmentChatWithFriend extends Fragment {
     boolean downloadingHistory;
     boolean noMoreHistory;
 
-    public static FragmentChatWithFriend getInstance(String friendId) {
-        FragmentChatWithFriend fragmentChatWithFriend = new FragmentChatWithFriend();
-        fragmentChatWithFriend.mFriendId = friendId;
-        return fragmentChatWithFriend;
+    public static FragmentChatOneOne getInstance(String friendId) {
+        FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
+        fragmentChatOneOne.mFriendId = friendId;
+        return fragmentChatOneOne;
     }
 
-    public static FragmentChatWithFriend getInstance(Member friend) {
-        FragmentChatWithFriend fragmentChatWithFriend = new FragmentChatWithFriend();
-        fragmentChatWithFriend.mFriend = friend;
-        fragmentChatWithFriend.mFriendId = friend.getUserInfo().getIdentity();
-        return fragmentChatWithFriend;
+    public static FragmentChatOneOne getInstance(Member friend) {
+        FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
+        fragmentChatOneOne.mFriend = friend;
+        fragmentChatOneOne.mFriendId = friend.getUserInfo().getIdentity();
+        return fragmentChatOneOne;
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        mBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_chat_with_friend, container, false);
+        mBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_chat_one_one, container, false);
         return mBinding.getRoot();
     }
 
@@ -77,8 +77,8 @@ public class FragmentChatWithFriend extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // toolbar
-        setHasOptionsMenu(true);
-        ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
+//        setHasOptionsMenu(true);
+//        ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
 
         mClient = MainApplication.get().getBasicClient();
         initUI();
@@ -88,7 +88,7 @@ public class FragmentChatWithFriend extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.chat_with_friend, menu);
+        inflater.inflate(R.menu.chat_one_one, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -105,6 +105,8 @@ public class FragmentChatWithFriend extends Fragment {
     }
 
     private void initUI() {
+        // toolbar setting
+        setHasOptionsMenu(true);
         ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
         mBinding.toolbar.setNavigationOnClickListener(view1 -> getActivity().onBackPressed());
         mBinding.toolbar.setTitle(mFriendId);
@@ -191,7 +193,7 @@ public class FragmentChatWithFriend extends Fragment {
                      // do nothing
                      MyLog.log("JOINED; " + mChannelUniqueName);
 
-                     setChannelListener(channel);
+                     channel.setListener(FragmentChatOneOne.this);
                      if (channel.getMembers().getMembers().length == 1) { // if friend not joined yet
                          inviteFriend();
                      } else {
@@ -236,7 +238,7 @@ public class FragmentChatWithFriend extends Fragment {
             public void onSuccess() {
                 MyLog.log("channel.join() ==> onSuccess()");
                 checkMemberInChannelToInitChatMessageAdapter();
-                setChannelListener(channel);
+                channel.setListener(FragmentChatOneOne.this);
             }
         });
 
@@ -331,89 +333,6 @@ public class FragmentChatWithFriend extends Fragment {
 
     }
 
-    private void setChannelListener(Channel channel) {
-        MyLog.log("setChannelListener()");
-
-        channel.setListener(new ChannelListener() {
-            @Override
-            public void onMessageAdd(Message message) {
-                MyLog.log("onMessageAdd() message=" + message.getMessageBody());
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mChatMessageAdapter.addNewMessage(message);
-                        mBinding.rvChatMessage.scrollToPosition(mChatMessageAdapter.getItemCount()-1);
-
-                        MyLog.log("setLastConsumedMessageIndex=" + message.getMessageIndex());
-                        mChannel.getMessages().setLastConsumedMessageIndex(message.getMessageIndex());
-                        mChatMessageAdapter.checkLastSeenMessage();
-                    }
-                });
-            }
-
-            @Override
-            public void onMessageChange(Message message) {
-                MyLog.log("onMessageChange() message=" + message.getMessageBody());
-            }
-
-            @Override
-            public void onMessageDelete(Message message) {
-
-            }
-
-            @Override
-            public void onMemberJoin(Member member) {
-                MyLog.log("onMemberJoin(); member=" + member.getUserInfo().getIdentity());
-                checkMemberInChannelToInitChatMessageAdapter();
-            }
-
-            @Override
-            public void onMemberChange(Member member) {
-                MyLog.log("onMemberChange(); member=" + member.getUserInfo().getIdentity());
-                mChatMessageAdapter.checkLastSeenMessage();
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (member.getUserInfo().isOnline()) {
-                            mBinding.toolbar.setSubtitle("Online");
-                            mBinding.toolbar.setSubtitleTextColor(Color.WHITE);
-                        } else {
-                            mBinding.toolbar.setSubtitle("Offline");
-                            mBinding.toolbar.setSubtitleTextColor(Color.LTGRAY);
-                        }
-                    }
-                });
-            }
-
-            @Override
-            public void onMemberDelete(Member member) {
-
-            }
-
-            @Override
-            public void onAttributesChange(Map<String, String> map) {
-
-            }
-
-            @Override
-            public void onTypingStarted(Member member) {
-                MyLog.log("onTypingStarted() member=" + member.getUserInfo().getIdentity());
-                mBinding.tvTypingIndicator.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onTypingEnded(Member member) {
-                MyLog.log("onTypingEnded() member=" + member.getUserInfo().getIdentity());
-                mBinding.tvTypingIndicator.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onSynchronizationChange(Channel channel) {
-                MyLog.log("onSynchronizationChange(); channel=" + channel.getUniqueName());
-            }
-        });
-    }
-
     private void checkMemberInChannelToInitChatMessageAdapter() {
         MyLog.log("checkMemberInChannelToInitChatMessageAdapter()");
         Channel channel = mClient.getIpMessagingClient().getChannels().getChannelByUniqueName(mChannelUniqueName);
@@ -457,5 +376,84 @@ public class FragmentChatWithFriend extends Fragment {
     }
 
 
+    /**
+     * ChannelListener implementation
+     */
 
+    @Override
+    public void onMessageAdd(Message message) {
+        MyLog.log("onMessageAdd() message=" + message.getMessageBody());
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mChatMessageAdapter.addNewMessage(message);
+                mBinding.rvChatMessage.scrollToPosition(mChatMessageAdapter.getItemCount()-1);
+
+                MyLog.log("setLastConsumedMessageIndex=" + message.getMessageIndex());
+                mChannel.getMessages().setLastConsumedMessageIndex(message.getMessageIndex());
+                mChatMessageAdapter.checkLastSeenMessage();
+            }
+        });
+    }
+
+    @Override
+    public void onMessageChange(Message message) {
+        MyLog.log("onMessageChange() message=" + message.getMessageBody());
+    }
+
+    @Override
+    public void onMessageDelete(Message message) {
+
+    }
+
+    @Override
+    public void onMemberJoin(Member member) {
+        MyLog.log("onMemberJoin(); member=" + member.getUserInfo().getIdentity());
+        checkMemberInChannelToInitChatMessageAdapter();
+    }
+
+    @Override
+    public void onMemberChange(Member member) {
+        MyLog.log("onMemberChange(); member=" + member.getUserInfo().getIdentity());
+        mChatMessageAdapter.checkLastSeenMessage();
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (member.getUserInfo().isOnline()) {
+                    mBinding.toolbar.setSubtitle("Online");
+                    mBinding.toolbar.setSubtitleTextColor(Color.WHITE);
+                } else {
+                    mBinding.toolbar.setSubtitle("Offline");
+                    mBinding.toolbar.setSubtitleTextColor(Color.LTGRAY);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onMemberDelete(Member member) {
+
+    }
+
+    @Override
+    public void onAttributesChange(Map<String, String> map) {
+
+    }
+
+    @Override
+    public void onTypingStarted(Member member) {
+        MyLog.log("onTypingStarted() member=" + member.getUserInfo().getIdentity());
+        mBinding.tvTypingIndicator.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onTypingEnded(Member member) {
+        MyLog.log("onTypingEnded() member=" + member.getUserInfo().getIdentity());
+        mBinding.tvTypingIndicator.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onSynchronizationChange(Channel channel) {
+        MyLog.log("onSynchronizationChange(); channel=" + channel.getUniqueName());
+    }
 }

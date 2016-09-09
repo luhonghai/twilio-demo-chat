@@ -52,7 +52,6 @@
         <activity
             android:theme="@style/AppThemeCompat"
             android:name=".direct.ActivityIntent"
-            android:label="@string/title_chat_direct"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden"
