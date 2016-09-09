@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin">
+    <LinearLayout
+        android:id="@+id/view_user_profile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:orientation="vertical">
+        <RelativeLayout
+            android:id="@+id/avatar_container"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="10dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
+            <com.facebook.drawee.view.SimpleDraweeView
+                android:id="@+id/avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:roundingBorderColor="@android:color/white"
+                app:roundingBorderWidth="2dp"
+                app:failureImage="@drawable/ic_contact_white"
+                app:failureImageScaleType="fitCenter"
+                app:roundAsCircle="true" />
+            <android.support.v7.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="@android:color/white"
+                android:layout_margin="5dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true">
+            <com.facebook.drawee.view.SimpleDraweeView
+                android:id="@+id/reachability"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                app:failureImageScaleType="centerCrop"
+                app:roundAsCircle="true"
+                app:roundingBorderColor="@android:color/white"
+                app:roundingBorderWidth="2dp"/>
+            </android.support.v7.widget.CardView>
+        </RelativeLayout>
+        <android.support.v7.widget.AppCompatTextView
+            android:id="@+id/txt_user_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_margin="8dp"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:text="Jason Lu"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+    <LinearLayout
+        android:visibility="gone"
+        android:id="@+id/progress_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/txt_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Incoming call ..."
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="@color/colorPrimary"
+            android:layout_margin="10dp"
+            android:gravity="center"/>
+        <me.zhanghai.android.materialprogressbar.MaterialProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:mpb_progressStyle="horizontal"
+            style="@style/Widget.MaterialProgressBar.ProgressBar.Horizontal" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/call_action_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            android:tint="@android:color/white"
+            app:srcCompat="@drawable/ic_call_white_24px" />
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/text_action_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            app:backgroundTint="@color/colorGray"
+            android:src="@drawable/ic_chat_bubble_white_24dp" />
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/cancel_action_fab"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            app:backgroundTint="@color/colorRed"
+            android:tint="@android:color/white"
+            app:srcCompat="@drawable/ic_call_end_white_24px" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,12 +1,9 @@
 package com.mhealth.chat.demo;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
@@ -17,7 +14,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
@@ -33,11 +29,15 @@ import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
+
 import com.mhealth.chat.demo.direct.ActivityIntent;
+
+import com.mhealth.chat.demo.twilio.TwilioClient;
+
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
-import com.twilio.ipmessaging.Constants.StatusListener;
 import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.IPMessagingClient;
 import com.twilio.ipmessaging.IPMessagingClientListener;
@@ -52,16 +52,12 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 
 @SuppressLint("InflateParams")
-public class ChannelActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
+public class ChannelActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener,
         GoogleApiClient.OnConnectionFailedListener
 {
 
 
     private static final Logger logger = Logger.getLogger(ChannelActivity.class);
-
-    private static final Handler handler = new Handler();
-    private AlertDialog          incomingChannelInvite;
-    private StatusListener       declineInvitationListener;
 
     @Bind(R.id.tabs)
     TabLayout tabLayout;
@@ -74,7 +70,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
     @Bind(R.id.nav_view)
     NavigationView navigationView;
 
-    BasicIPMessagingClient chatClient;
+    TwilioClient chatClient;
 
     @Bind(R.id.toolbar)
     Toolbar toolbar;
@@ -124,20 +120,43 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         chatClient = MainApplication.get().getBasicClient();
         setNavigationHeader();
         setListener();
+        updateChannels();
+    }
+
+    private void updateChannels() {
+        try {
+            Channel general = chatClient.getIpMessagingClient().getChannels().getChannelByUniqueName("general");
+            if (general != null && general.getStatus() != Channel.ChannelStatus.JOINED) {
+                general.join(new Constants.StatusListener() {
+                    @Override
+                    public void onSuccess() {
+
+                    }
+                });
+            }
+            for (Channel channel : chatClient.getIpMessagingClient().getChannels().getChannels()) {
+                TwilioChannel.sync(channel);
+            }
+        } catch (Exception e) {}
     }
 
     private void setListener()
     {
+        if (chatClient.getIpMessagingClient() == null) {
+            this.finish();
+            return;
+        }
         chatClient.getIpMessagingClient().setListener(new IPMessagingClientListener() {
             @Override
             public void onChannelAdd(Channel channel)
             {
+                TwilioChannel.sync(channel);
             }
 
             @Override
             public void onChannelChange(Channel channel)
             {
-
+                TwilioChannel.sync(channel);
             }
 
             @Override
@@ -209,6 +228,11 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     private void setNavigationHeader() {
@@ -286,102 +310,10 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
         switch (item.getItemId()) {
             case R.id.action_add:
                 Intent intent = new Intent(this, AddGroupActivity.class);
-                startActivityForResult(intent, ActivityResultCommon.ADD_GROUP);
+                startActivityForResult(intent, ActivityResultCommon.ACTION_ADD_GROUP);
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
-        handleIncomingIntent(getIntent());
-    }
-
-    private boolean handleIncomingIntent(Intent intent)
-    {
-        if (intent != null) {
-            Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
-            String  action = intent.getStringExtra(Constants.EXTRA_ACTION);
-            intent.removeExtra(Constants.EXTRA_CHANNEL);
-            intent.removeExtra(Constants.EXTRA_ACTION);
-            if (action != null) {
-                if (action.compareTo(Constants.EXTRA_ACTION_INVITE) == 0) {
-                    this.showIncomingInvite(channel);
-                }
-            }
-        }
-        return false;
-    }
-
-    private void showIncomingInvite(final Channel channel)
-    {
-        handler.post(new Runnable() {
-            @Override
-            public void run()
-            {
-                if (incomingChannelInvite == null) {
-                    incomingChannelInvite =
-                            new AlertDialog.Builder(ChannelActivity.this)
-                                    .setTitle(R.string.incoming_call)
-                                    .setMessage(R.string.incoming_call_message)
-                                    .setPositiveButton(
-                                            R.string.join,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which)
-                                                {
-                                                    channel.join(new StatusListener() {
-                                                        @Override
-                                                        public void onError(ErrorInfo errorInfo)
-                                                        {
-                                                            MainApplication.get().logErrorInfo(
-                                                                    "Failed to join channel", errorInfo);
-                                                        }
-
-                                                        @Override
-                                                        public void onSuccess()
-                                                        {
-                                                            //TODO notify update list
-                                                            logger.d("Successfully joined channel");
-                                                        }
-                                                    });
-                                                    incomingChannelInvite = null;
-                                                }
-                                            })
-                                    .setNegativeButton(
-                                            R.string.decline,
-                                            new DialogInterface.OnClickListener() {
-
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which)
-                                                {
-                                                    declineInvitationListener = new StatusListener() {
-
-                                                        @Override
-                                                        public void onError(ErrorInfo errorInfo)
-                                                        {
-                                                            MainApplication.get().logErrorInfo(
-                                                                    "Failed to decline channel invite", errorInfo);
-                                                        }
-
-                                                        @Override
-                                                        public void onSuccess()
-                                                        {
-                                                            logger.d("Successfully declined channel invite");
-                                                        }
-
-                                                    };
-                                                    channel.declineInvitation(declineInvitationListener);
-                                                    incomingChannelInvite = null;
-                                                }
-                                            })
-                                    .create();
-                    incomingChannelInvite.show();
-                }
-            }
-        });
     }
 
     @Override
@@ -403,6 +335,8 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
 
     private void doLogout() {
         new UserPreference(this).setAccessToken("");
+        if (chatClient != null && chatClient.getIpMessagingClient() != null)
+            //chatClient.getIpMessagingClient().shutdown();
         Auth.GoogleSignInApi.signOut(mGoogleApiClient);
         Intent intent = new Intent(this, LoginActivity.class);
         startActivity(intent);
@@ -412,7 +346,7 @@ public class ChannelActivity extends AppCompatActivity implements NavigationView
     MaterialDialog mLogoutDialog;
     private void logout() {
         mLogoutDialog = new MaterialDialog.Builder(this)
-                .title("Do you ready want to logout?")
+                .title("Do you really want to logout?")
                 .positiveText("Logout")
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override

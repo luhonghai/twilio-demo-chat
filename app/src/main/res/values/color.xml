@@ -5,5 +5,7 @@
     <color name="colorOrange">#be3e14</color>
     <color name="colorAccent">#68c7dd</color>
     <color name="colorGray">#929292</color>
+    <color name="colorGreen">#009933</color>
+    <color name="colorRed">#ff3300</color>
     <color name="message_background_gray">#f1f0f0</color>
 </resources>

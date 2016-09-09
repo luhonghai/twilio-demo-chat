@@ -10,13 +10,11 @@ import android.content.SharedPreferences;
 public class UserPreference {
 
     private static final String ACCESS_TOKEN = "ACCESS_TOKEN";
-    private final Context context;
 
-    private SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
     public UserPreference(Context context) {
-        this.context = context;
-        sharedPreferences = context.getSharedPreferences(UserPreference.class.getSimpleName(), Context.MODE_PRIVATE);
+        sharedPreferences = context.getSharedPreferences(ACCESS_TOKEN, Context.MODE_PRIVATE);
     }
 
     public void setAccessToken(String token) {

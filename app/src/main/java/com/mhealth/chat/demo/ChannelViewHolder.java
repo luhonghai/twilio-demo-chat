@@ -1,17 +1,13 @@
 package com.mhealth.chat.demo;
 
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.twilio.ipmessaging.Channel;
-import com.twilio.ipmessaging.Channel.ChannelStatus;
-import com.twilio.ipmessaging.Constants;
-
-import android.graphics.Color;
-import android.graphics.drawable.Icon;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.json.JSONException;
+import com.mhealth.chat.demo.data.TwilioChannel;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.twilio.ipmessaging.Channel;
+import com.twilio.ipmessaging.Channel.ChannelStatus;
 
 import uk.co.ribot.easyadapter.ItemViewHolder;
 import uk.co.ribot.easyadapter.PositionInfo;
@@ -53,21 +49,37 @@ public class ChannelViewHolder extends ItemViewHolder<Channel>
     @Override
     public void onSetValues(Channel channel, PositionInfo arg1)
     {
-        friendlyName.setText(channel.getFriendlyName());
-        try {
-
-            String icon = "";
+        TwilioChannel twilioChannel = MainApplication.get().getChannelDataPreference().get(channel.getSid());
+        if (twilioChannel != null) {
+            friendlyName.setText(twilioChannel.getFriendlyName());
+            TwilioChannel.Attribute attrObject = twilioChannel.getAttributeObject();
+            if (attrObject != null) {
+                ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(attrObject.getIcon()), imageView);
+            }
+        } else {
+            friendlyName.setText(channel.getFriendlyName());
             try {
-                icon = channel.getAttributes().opt("group_icon").toString();
+                String icon = "";
+                try {
+                    icon = channel.getAttributes().opt("group_icon").toString();
+                } catch (Exception e) {
+                }
+                if (icon != null && icon.length() > 0) {
+                    ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if (icon != null && icon.length() > 0) {
-                ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icon), imageView);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+
+        int color;
+        if (channel.getStatus() == ChannelStatus.JOINED) {
+            color = getContext().getResources().getColor(R.color.colorPrimary);
+        } else {
+            color = getContext().getResources().getColor(R.color.colorGray);
+        }
+        imageView.setColorFilter(color);
+        friendlyName.setTextColor(color);
     }
 
     public interface OnChannelClickListener {

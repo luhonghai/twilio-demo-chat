@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Channels;
@@ -49,7 +50,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
     private static final String CHANNEL_TYPE = "CHANNEL_TYPE";
 
     private GridView listView;
-    private BasicIPMessagingClient basicClient;
+    private TwilioClient basicClient;
     private List<Channel> channels = new ArrayList<Channel>();
     private EasyAdapter<Channel> adapter;
     private Channels channelsObject;
@@ -91,6 +92,8 @@ public class ChannelFragment extends Fragment implements ChannelListener {
         switch (event.getAction()) {
             case GROUP_ADDED:
             case CHANNELS_UPDATED:
+            case GROUP_LEAVED:
+            case GROUP_REMOVED:
                 getChannels();
                 break;
         }
@@ -111,25 +114,8 @@ public class ChannelFragment extends Fragment implements ChannelListener {
     {
         super.onResume();
         if (getActivity() != null) {
-            handleIncomingIntent(getActivity().getIntent());
             getChannels();
         }
-    }
-
-    private boolean handleIncomingIntent(Intent intent)
-    {
-        if (intent != null) {
-            Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
-            String  action = intent.getStringExtra(Constants.EXTRA_ACTION);
-            intent.removeExtra(Constants.EXTRA_CHANNEL);
-            intent.removeExtra(Constants.EXTRA_ACTION);
-            if (action != null) {
-                if (action.compareTo(Constants.EXTRA_ACTION_INVITE) == 0) {
-                    this.showIncomingInvite(channel);
-                }
-            }
-        }
-        return false;
     }
 
     private void setupListView(View root)
@@ -206,6 +192,7 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                     }
                 });
         listView.setAdapter(adapter);
+        getChannels();
     }
 
     private void getChannels()
@@ -218,8 +205,9 @@ public class ChannelFragment extends Fragment implements ChannelListener {
                 List<Channel> channelList = new ArrayList<>();
                 if (channelArray != null && channelArray.length > 0) {
                     for (final Channel channel : channelArray) {
-                        if (channel.getType() == getChannelType()) {
-                            channelList.add(channel);
+                        if (channel.getType() == getChannelType()
+                                && !channel.getUniqueName().toLowerCase().startsWith(Constant.CHAT_CONSULT_PREFIX)) {
+                            channelList.add(channelsObject.getChannel(channel.getSid()));
                         }
                     }
                     Collections.sort(channelList, new CustomChannelComparator());

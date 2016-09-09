@@ -17,12 +17,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.mhealth.chat.demo.BasicIPMessagingClient;
 import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.R;
 import com.mhealth.chat.demo.adapter.ChatMessageAdapter;
 import com.mhealth.chat.demo.customview.SoftKeyboardHandledLinearLayout;
 import com.mhealth.chat.demo.databinding.FragmentChatWithFriendBinding;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Constants;
@@ -44,7 +44,7 @@ public class FragmentChatWithFriend extends Fragment {
     FragmentChatWithFriendBinding mBinding;
     String mFriendId;
     Member mFriend;
-    BasicIPMessagingClient mClient;
+    TwilioClient mClient;
 
     String mChannelUniqueName;
     Channel mChannel;

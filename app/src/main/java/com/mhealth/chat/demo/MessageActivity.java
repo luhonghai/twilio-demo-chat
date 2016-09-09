@@ -3,12 +3,12 @@ package com.mhealth.chat.demo;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.DataSetObserver;
-import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -17,11 +17,18 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AbsListView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.data.ChatConsultSession;
+import com.mhealth.chat.demo.data.TwilioChannel;
+import com.mhealth.chat.demo.event.ChannelEvent;
+import com.mhealth.chat.demo.twilio.TwilioClient;
+import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.ChannelListener;
 import com.twilio.ipmessaging.Channels;
@@ -34,7 +41,6 @@ import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.Messages;
 import com.twilio.ipmessaging.internal.Logger;
 
-import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,18 +54,21 @@ import java.util.Map;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import uk.co.ribot.easyadapter.EasyAdapter;
 
-public class MessageActivity extends AppCompatActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
+public class MessageActivity extends BaseActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
 {
+
+    private static final int MESSAGE_PAGE_SIZE = 30;
+    private static final int MAX_PAGE_SIZE = 30;
     private static final Logger logger = Logger.getLogger(MessageActivity.class);
     private static final        String[] MESSAGE_OPTIONS = {
-        "Remove", "Edit", "Get Attributes", "Edit Attributes", "Call"
+        "Remove", "Edit"
     };
     private ListView                 messageListView;
     private EditText                 inputText;
     private EasyAdapter<MessageItem> adapter;
-    private List<Message>            messages = new ArrayList<Message>();
     private List<Member>             members = new ArrayList<Member>();
     private Channel                  channel;
     private static final             String[] EDIT_OPTIONS = { "Change Friendly Name",
@@ -104,32 +113,48 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     private ArrayList<MessageItem> messageItemList;
     private String                 identity;
 
-    private View viewVideo;
-    private View viewChat;
-
     @Bind(R.id.toolbar)
     Toolbar toolbar;
+
+    @Bind(R.id.progress_bar)
+    View progressBar;
+
+    @Bind(R.id.progress_bar_bottom)
+    View progressBarBottom;
+
+    @Bind(R.id.sendButton)
+    View btnSend;
+
+    private UserInfoDialog userInfoDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        userInfoDialog = new UserInfoDialog(this);
         createUI();
-
-        EventBus.getDefault().register(this);
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventBus.getDefault().unregister(this);
+        if (userInfoDialog != null) {
+            userInfoDialog.dismiss();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        MainApplication.get().setCurrentChannelSid("");
     }
 
     @Override
     protected void onResume()
     {
         super.onResume();
+        MainApplication.get().setCurrentChannelSid(channel.getSid());
         Intent intent = getIntent();
         if (intent != null) {
             Channel channel = intent.getParcelableExtra(Constants.EXTRA_CHANNEL);
@@ -139,23 +164,19 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         }
     }
 
-    @Subscribe
-    public void onHangup(HangupEvent event) {
-        viewChat.setVisibility(View.VISIBLE);
-        viewVideo.setVisibility(View.GONE);
-    }
-
     private void createUI()
     {
+        if (MainApplication.get().getBasicClient().getIpMessagingClient() == null) {
+            this.finish();
+            return;
+        }
         setContentView(R.layout.activity_message);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("");
-        viewVideo = findViewById(R.id.videoLayout);
-        viewChat = findViewById(R.id.chat);
         if (getIntent() != null) {
-            BasicIPMessagingClient basicClient = MainApplication.get().getBasicClient();
+            TwilioClient basicClient = MainApplication.get().getBasicClient();
             identity = basicClient.getIpMessagingClient().getMyUserInfo().getIdentity();
             String   channelSid = getIntent().getStringExtra("C_SID");
             Channels channelsObject = basicClient.getIpMessagingClient().getChannels();
@@ -163,7 +184,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                 channel = channelsObject.getChannel(channelSid);
                 if (channel != null) {
                     channel.setListener(MessageActivity.this);
-                    getSupportActionBar().setTitle(channel.getFriendlyName());
+                    updateTitle();
                 }
             }
         }
@@ -184,32 +205,71 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
 
         setupListView(channel);
         messageListView = (ListView)findViewById(R.id.message_list_view);
-        if (messageListView != null) {
-            messageListView.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
-            messageListView.setStackFromBottom(true);
-            adapter.registerDataSetObserver(new DataSetObserver() {
-                @Override
-                public void onChanged()
-                {
-                    super.onChanged();
-                    messageListView.setSelection(adapter.getCount() - 1);
-                }
-            });
-        }
         setupInput();
+    }
+
+    private void updateTitle() {
+        TwilioChannel twilioChannel = MainApplication.get().getChannelDataPreference().get(channel.getSid());
+        if (twilioChannel != null) {
+            getSupportActionBar().setTitle(twilioChannel.getFriendlyName());
+        } else {
+            getSupportActionBar().setTitle(channel.getFriendlyName());
+        }
+
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
-        getMenuInflater().inflate(R.menu.message, menu);
+        getMenuInflater().inflate(R.menu.group, menu);
+        if (isChatConsult()) {
+            menu.findItem(R.id.action_video).setVisible(true);
+            menu.findItem(R.id.action_info).setVisible(false);
+        } else {
+            menu.findItem(R.id.action_video).setVisible(false);
+            menu.findItem(R.id.action_info).setVisible(true);
+        }
         return true;
+    }
+
+    private boolean isChatConsult() {
+        if (getIntent() != null) {
+            TwilioClient basicClient = MainApplication.get().getBasicClient();
+            String   channelSid = getIntent().getStringExtra("C_SID");
+            Channels channelsObject = basicClient.getIpMessagingClient().getChannels();
+            if (channelsObject != null) {
+                channel = channelsObject.getChannel(channelSid);
+                if (channel != null && channel.getUniqueName().startsWith(ChatConsultSession.CHAT_CONSULT_PREFIX)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
+        Intent intent;
         switch (item.getItemId()) {
+            case R.id.action_info:
+                intent = new Intent(this, ChannelDetailActivity.class);
+                intent.putExtra(Channel.class.getName(), channel);
+                startActivityForResult(intent, ActivityResultCommon.ACTION_EDIT_GROUP);
+                break;
+            case R.id.action_video:
+                Member[] members = channel.getMembers().getMembers();
+                for (Member member : members) {
+                    if (!member.getUserInfo().getIdentity().equalsIgnoreCase(identity)) {
+                        intent = new Intent(MessageActivity.this, ConversationActivity.class);
+                        intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
+                        intent.putExtra(ConversationActivity.TARGET_IDENTITY, member.getUserInfo().getIdentity());
+                        startActivity(intent);
+                        break;
+                    }
+                }
+
+                break;
             case R.id.action_settings: showChannelSettingsDialog(); break;
         }
         return super.onOptionsItemSelected(item);
@@ -368,7 +428,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                             @Override
                             public void onSuccess()
                             {
-                                logger.d("Attributes were set successfullly.");
+                                logger.d("Attributes were set successfully.");
                             }
 
                             @Override
@@ -530,25 +590,21 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
 
     private void showUpdateMessageDialog(final Message message)
     {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
-        builder.setView(getLayoutInflater().inflate(R.layout.dialog_edit_message, null))
-            .setPositiveButton(
-                "Update",
-                new DialogInterface.OnClickListener() {
+        new MaterialDialog.Builder(this)
+                .title("Update message")
+                .inputType(InputType.TYPE_CLASS_TEXT)
+                .input("Enter new message", message.getMessageBody(), new MaterialDialog.InputCallback() {
                     @Override
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        String updatedMsg =
-                            ((EditText)editTextDialog.findViewById(R.id.update_message))
-                                .getText()
-                                .toString();
+                    public void onInput(@NonNull MaterialDialog dialog, final CharSequence input) {
+                        final String updatedMsg = input.toString();
+                        if (updatedMsg.isEmpty()) return;
                         message.updateMessageBody(updatedMsg, new StatusListener() {
                             @Override
                             public void onError(ErrorInfo errorInfo)
                             {
                                 MainApplication.get().showError(errorInfo);
                                 MainApplication.get().logErrorInfo("Error updating message",
-                                                                     errorInfo);
+                                        errorInfo);
                             }
 
                             @Override
@@ -559,41 +615,16 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                                     @Override
                                     public void run()
                                     {
-                                        final Channel thisChannel = MessageActivity.this.channel;
-                                        final Messages    messagesObject = channel.getMessages();
-                                        List<MessageItem> items = new ArrayList<MessageItem>();
-                                        Members           members = channel.getMembers();
-                                        if (messagesObject != null) {
-                                            Message[] messagesArray = messagesObject.getMessages();
-                                            if (messagesArray.length > 0) {
-                                                messages = new ArrayList<Message>(
-                                                    Arrays.asList(messagesArray));
-                                                Collections.sort(messages,
-                                                                 new CustomMessageComparator());
-                                            }
-                                            for (int i = 0; i < messagesArray.length; i++) {
-                                                items.add(new MessageItem(
-                                                    messages.get(i), members, identity));
-                                            }
-                                        }
-
-                                        adapter.getItems().clear();
-                                        adapter.getItems().addAll(items);
-                                        adapter.notifyDataSetChanged();
+                                        setupListView(channel);
                                     }
                                 });
                             }
                         });
                     }
                 })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    dialog.cancel();
-                }
-            });
-        editTextDialog = builder.create();
-        editTextDialog.show();
+                .positiveText("Update")
+                .negativeText("Cancel")
+                .show();
     }
 
     private void showUpdateMessageAttributesDialog(final Message message)
@@ -635,27 +666,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                                     @Override
                                     public void run()
                                     {
-                                        final Channel thisChannel = MessageActivity.this.channel;
-                                        final Messages    messagesObject = channel.getMessages();
-                                        List<MessageItem> items = new ArrayList<MessageItem>();
-                                        Members           members = channel.getMembers();
-                                        if (messagesObject != null) {
-                                            Message[] messagesArray = messagesObject.getMessages();
-                                            if (messagesArray.length > 0) {
-                                                messages = new ArrayList<Message>(
-                                                    Arrays.asList(messagesArray));
-                                                Collections.sort(messages,
-                                                                 new CustomMessageComparator());
-                                            }
-                                            for (int i = 0; i < messagesArray.length; i++) {
-                                                items.add(new MessageItem(
-                                                    messages.get(i), members, identity));
-                                            }
-                                        }
-
-                                        adapter.getItems().clear();
-                                        adapter.getItems().addAll(items);
-                                        adapter.notifyDataSetChanged();
+                                        setupListView(channel);
                                     }
                                 });
                             }
@@ -711,14 +722,11 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
                 return true;
             }
         });
+    }
 
-        findViewById(R.id.sendButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view)
-            {
-                sendMessage();
-            }
-        });
+    @OnClick(R.id.sendButton)
+    public void clickButtonSend() {
+        sendMessage();
     }
 
     private class CustomMessageComparator implements Comparator<Message>
@@ -736,130 +744,254 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         }
     }
 
-    private void setupListView(Channel channel)
+    private long lastMessageIndex = -1;
+
+    private void setupListView(final Channel channel)
     {
         messageListView = (ListView)findViewById(R.id.message_list_view);
         final Messages messagesObject = channel.getMessages();
-        final Members membersObject = channel.getMembers();
-
-        messageListView.getViewTreeObserver().addOnScrollChangedListener(
-            new ViewTreeObserver.OnScrollChangedListener() {
+        if (messagesObject != null) {
+            messagesObject.getLastMessages(MESSAGE_PAGE_SIZE, new Constants.CallbackListener<List<Message>>() {
                 @Override
-                public void onScrollChanged()
-                {
-                    if ((messageListView.getLastVisiblePosition() >= 0)
-                        && (messageListView.getLastVisiblePosition() < adapter.getCount())) {
-                        MessageItem item =
-                            adapter.getItem(messageListView.getLastVisiblePosition());
-                        if (item != null && messagesObject != null)
-                            messagesObject.advanceLastConsumedMessageIndex(
-                                item.getMessage().getMessageIndex());
-                    }
+                public void onSuccess(final List<Message> messages) {
+                    logger.d("Found " + messages.size() + " messages");
+                    if (messages.size() == 0) return;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            setEnableScrollToBottom(true);
+                            Members members = channel.getMembers();
+                            Collections.sort(messages, new CustomMessageComparator());
+                            MessageItem[] items = new MessageItem[messages.size()];
+                            for (int i = 0; i < items.length; i++) {
+                                items[i] = new MessageItem(messages.get(i), members, identity);
+                            }
+                            messageItemList = new ArrayList(Arrays.asList(items));
+                            adapter = new EasyAdapter<MessageItem>(
+                                    MessageActivity.this,
+                                    MessageViewHolder.class,
+                                    messageItemList,
+                                    onMessageClickListener
+                            );
+                            messageListView.setAdapter(adapter);
+                            adapter.notifyDataSetChanged();
+                            messageListView.getViewTreeObserver().addOnScrollChangedListener(onScrollChangedListener);
+//                            if (lastMessageIndex == -1) {
+//                                messageListView.setSelection(adapter.getCount() - 1);
+//                            } else {
+//                                messageListView.smoothScrollToPosition(adapter.getCount() - 1);
+//                            }
+                            lastMessageIndex = messages.get(0).getMessageIndex();
+                        }
+                    });
                 }
             });
+        }
+    }
 
-        if (messagesObject != null) {
-            Message[] messagesArray = messagesObject.getMessages();
-            Members members = channel.getMembers();
-            if (messagesArray.length > 0) {
-                messages = new ArrayList<Message>(Arrays.asList(messagesArray));
-                Collections.sort(messages, new CustomMessageComparator());
+    private void setEnableScrollToBottom(boolean enable) {
+        if (messageListView != null) {
+            messageListView.setTranscriptMode(enable ? AbsListView.TRANSCRIPT_MODE_ALWAYS_SCROLL :
+                    AbsListView.TRANSCRIPT_MODE_DISABLED);
+            messageListView.setStackFromBottom(enable);
+        }
+    }
+
+    private ViewTreeObserver.OnScrollChangedListener onScrollChangedListener = new ViewTreeObserver.OnScrollChangedListener() {
+        @Override
+        public void onScrollChanged()
+        {
+            if (adapter == null || channel == null) return;
+            Messages messagesObject = channel.getMessages();
+            if ((messageListView.getLastVisiblePosition() >= 0)
+                    && (messageListView.getLastVisiblePosition() < adapter.getCount())) {
+                MessageItem item =
+                        adapter.getItem(messageListView.getLastVisiblePosition());
+
+                if (item != null && messagesObject != null) {
+                    messagesObject.advanceLastConsumedMessageIndex(
+                            item.getMessage().getMessageIndex());
+                    logger.d("getLastVisiblePosition " + messageListView.getLastVisiblePosition() + " Message index:"
+                            + item.getMessage().getMessageIndex()
+                            +". Text: " + item.getMessage().getMessageBody()
+                            + ". Author: " + item.getMessage().getAuthor());
+                }
             }
-            MessageItem[] items = new MessageItem[messagesArray.length];
-            for (int i = 0; i < items.length; i++) {
-                items[i] = new MessageItem(messages.get(i), members, identity);
+            int pos = messageListView.getFirstVisiblePosition();
+            if (pos >= 0
+                    && pos < adapter.getCount()) {
+                MessageItem item = adapter.getItem(pos);
+                if (item != null && messagesObject != null) {
+                    logger.d("getFirstVisiblePosition " + pos + " Message index:"
+                            + item.getMessage().getMessageIndex() + ". Text: " + item.getMessage().getMessageBody()
+                            + ". Author: " + item.getMessage().getAuthor()
+                    + ". Current size " + messageItemList.size());
+                    final long lIndex = Long.valueOf(lastMessageIndex);
+                    if (lastMessageIndex != -1
+                            && item.getMessage().getMessageIndex() == lastMessageIndex
+                            && messageItemList != null && messageItemList.size() > 0
+                            && messageItemList.size() % MESSAGE_PAGE_SIZE == 0
+                            && messageItemList.size() <= MAX_PAGE_SIZE * MESSAGE_PAGE_SIZE) {
+                        progressBar.setVisibility(View.VISIBLE);
+
+                        messagesObject.getMessagesBefore(lastMessageIndex, MESSAGE_PAGE_SIZE, new Constants.CallbackListener<List<Message>>() {
+                            @Override
+                            public void onSuccess(final List<Message> mesMessages) {
+                                logger.d("Found " + mesMessages.size() + " messages from index " + lIndex);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setEnableScrollToBottom(false);
+                                        if (mesMessages.size() > 0) {
+                                            Members members = channel.getMembers();
+                                            Collections.sort(mesMessages, new CustomMessageComparator());
+                                            lastMessageIndex = mesMessages.get(0).getMessageIndex();
+                                            for (int i = mesMessages.size() - 1; i >= 0; i--) {
+                                                MessageItem messageItem = new MessageItem(mesMessages.get(i), members, identity);
+                                                messageItemList.add(0, messageItem);
+                                            }
+                                            adapter.notifyDataSetChanged();
+                                            messageListView.clearFocus();
+                                            messageListView.setFocusable(true);
+                                            messageListView.setSelection(mesMessages.size());
+                                        } else {
+                                            lastMessageIndex = -1;
+                                        }
+                                        setEnableScrollToBottom(true);
+                                        progressBar.setVisibility(View.GONE);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(final ErrorInfo errorInfo) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        progressBar.setVisibility(View.GONE);
+                                        MainApplication.get().showError(errorInfo);
+                                    }
+                                });
+                            }
+                        });
+                        lastMessageIndex = -1;
+                    }
+                }
             }
-            messageItemList = new ArrayList(Arrays.asList(items));
-            adapter = new EasyAdapter<MessageItem>(
-                this,
-                MessageViewHolder.class,
-                messageItemList,
-                new MessageViewHolder.OnMessageClickListener() {
-                    @Override
-                    public void onMessageClicked(final MessageItem message)
-                    {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
-                        builder.setTitle("Select an option")
-                            .setItems(MESSAGE_OPTIONS, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which)
-                                {
-                                    if (which == REMOVE) {
-                                        dialog.cancel();
-                                        messagesObject.removeMessage(
+        }
+    };
+
+    private MessageViewHolder.OnMessageClickListener onMessageClickListener = new MessageViewHolder.OnMessageClickListener() {
+        @Override
+        public void onMessageClicked(final MessageItem message)
+        {
+            if (message.getCurrentUser().equalsIgnoreCase(message.getMessage().getAuthor())) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MessageActivity.this);
+                builder.setTitle("Select an option")
+                        .setItems(MESSAGE_OPTIONS, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (which == REMOVE) {
+                                    dialog.cancel();
+                                    channel.getMessages().removeMessage(
                                             message.getMessage(), new StatusListener() {
                                                 @Override
-                                                public void onError(ErrorInfo errorInfo)
-                                                {
+                                                public void onError(ErrorInfo errorInfo) {
                                                     MainApplication.get().showError(errorInfo);
                                                     MainApplication.get().logErrorInfo(
-                                                        "Error removing message", errorInfo);
+                                                            "Error removing message", errorInfo);
                                                 }
 
                                                 @Override
-                                                public void onSuccess()
-                                                {
+                                                public void onSuccess() {
                                                     logger.d(
-                                                        "Successfully removed message. It should be GONE!!");
+                                                            "Successfully removed message. It should be GONE!!");
                                                     runOnUiThread(new Runnable() {
                                                         @Override
-                                                        public void run()
-                                                        {
+                                                        public void run() {
                                                             messageItemList.remove(message);
                                                             adapter.notifyDataSetChanged();
                                                         }
                                                     });
                                                 }
                                             });
-                                    } else if (which == EDIT) {
-                                        showUpdateMessageDialog(message.getMessage());
-                                    } else if (which == GET_ATTRIBUTES) {
-                                        showToast(message.getMessage().getAttributes().toString());
-                                    } else if (which == SET_ATTRIBUTES) {
-                                        showUpdateMessageAttributesDialog(message.getMessage());
-                                    } else if (which == CALL) {
-                                        doCall(message.getMessage().getAuthor());
-                                    }
+                                } else if (which == EDIT) {
+                                    showUpdateMessageDialog(message.getMessage());
                                 }
-                            });
-                        builder.show();
-                    }
-                });
-            messageListView.setAdapter(adapter);
-            adapter.notifyDataSetChanged();
+                            }
+                        });
+                builder.show();
+            }
         }
-    }
+
+        @Override
+        public void onMemberSelect(Member member) {
+            userInfoDialog.show(member, new UserInfoDialog.UserInfoListener() {
+                @Override
+                public void clickCall(Member member) {
+                    Intent intent = new Intent(MessageActivity.this, ConversationActivity.class);
+                    intent.putExtra(ConversationActivity.VIDEO_ACTION, ConversationActivity.ACTION_CALL);
+                    intent.putExtra(ConversationActivity.TARGET_IDENTITY, member.getUserInfo().getIdentity());
+                    startActivity(intent);
+                }
+
+                @Override
+                public void clickCancelCall(Member member) {
+
+                }
+
+                @Override
+                public void clickChat(Member member) {
+
+                }
+            });
+        }
+    };
 
     private void sendMessage()
     {
         inputText = (EditText)findViewById(R.id.messageInput);
-        String input = inputText.getText().toString();
+        final String input = inputText.getText().toString();
         if (!input.equals("")) {
             final Messages messagesObject = this.channel.getMessages();
-
-            messagesObject.sendMessage(input, new StatusListener() {
+            inputText.setText("");
+            progressBarBottom.setVisibility(View.VISIBLE);
+            new AsyncTask<Void, Void, Void>() {
                 @Override
-                public void onError(ErrorInfo errorInfo)
-                {
-                    MainApplication.get().showError(errorInfo);
-                    MainApplication.get().logErrorInfo("Error sending message", errorInfo);
-                }
-
-                @Override
-                public void onSuccess()
-                {
-                    logger.d("Successfully sent message.");
-                    runOnUiThread(new Runnable() {
+                protected Void doInBackground(Void... params) {
+                    messagesObject.sendMessage(input, new StatusListener() {
                         @Override
-                        public void run()
+                        public void onError(ErrorInfo errorInfo)
                         {
-                            adapter.notifyDataSetChanged();
-                            inputText.setText("");
+                            MainApplication.get().showError(errorInfo);
+                            MainApplication.get().logErrorInfo("Error sending message", errorInfo);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    inputText.requestFocus();
+                                    progressBarBottom.setVisibility(View.GONE);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onSuccess()
+                        {
+                            logger.d("Successfully sent message.");
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run()
+                                {
+                                    inputText.requestFocus();
+                                    progressBarBottom.setVisibility(View.GONE);
+                                }
+                            });
                         }
                     });
+                    return null;
                 }
-            });
-        }
+            }.execute();
 
+        }
         inputText.requestFocus();
     }
 
@@ -868,6 +1000,14 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
             return adapter.getItem(pos);
         }
         return null;
+    }
+
+    @Subscribe
+    public void onChannelUpdated(ChannelEvent channelEvent) {
+        Channel mChannel = channelEvent.getChannel();
+        if (mChannel != null && channel != null && channel.getSid().equalsIgnoreCase(mChannel.getSid())) {
+            updateTitle();
+        }
     }
 
     @Override
@@ -880,7 +1020,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMessageChange(Message message)
     {
         if (message != null) {
-            showToast(message.getSid() + " changed");
+            //showToast(message.getSid() + " changed");
+            setupListView(this.channel);
             logger.d("Received onMessageChange for message sid|" + message.getSid() + "|");
         } else {
             logger.d("Received onMessageChange");
@@ -891,7 +1032,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMessageDelete(Message message)
     {
         if (message != null) {
-            showToast(message.getSid() + " deleted");
+            //showToast(message.getSid() + " deleted");
+            setupListView(this.channel);
             logger.d("Received onMessageDelete for message sid|" + message.getSid() + "|");
         } else {
             logger.d("Received onMessageDelete.");
@@ -902,7 +1044,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberJoin(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " joined");
+            //showToast(member.getUserInfo().getIdentity() + " joined");
         }
     }
 
@@ -910,7 +1052,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberChange(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " changed");
+            //showToast(member.getUserInfo().getIdentity() + " changed");
         }
     }
 
@@ -918,7 +1060,7 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     public void onMemberDelete(Member member)
     {
         if (member != null) {
-            showToast(member.getUserInfo().getIdentity() + " deleted");
+            //showToast(member.getUserInfo().getIdentity() + " deleted");
         }
     }
 
@@ -940,9 +1082,8 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
     {
         if (member != null) {
             TextView typingIndc = (TextView)findViewById(R.id.typingIndicator);
-            String   text = member.getUserInfo().getIdentity() + " is typing .....";
+            String   text = member.getUserInfo().getIdentity() + " is typing ...";
             typingIndc.setText(text);
-            typingIndc.setTextColor(Color.RED);
             logger.d(text);
         }
     }
@@ -998,14 +1139,15 @@ public class MessageActivity extends AppCompatActivity implements ChannelListene
         logger.d("Received onSynchronizationChange callback " + channel.getFriendlyName());
     }
 
-    @Subscribe
-    public void onCallEvent(CallEvent event) {
-        viewVideo.setVisibility(View.VISIBLE);
-        viewChat.setVisibility(View.GONE);
-    }
-
-    public void doCall(String target) {
-        EventBus.getDefault().post(new CallEvent(target));
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ActivityResultCommon.ACTION_EDIT_GROUP) {
+            if (resultCode == ActivityResultCommon.RESULT_LEAVE_GROUP
+                    || resultCode == ActivityResultCommon.RESULT_REMOVE_GROUP) {
+                this.finish();
+            }
+        }
     }
 
     public static class MessageItem

@@ -2,19 +2,18 @@ package com.mhealth.chat.demo;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.mhealth.chat.demo.adapter.IconAdapter;
+import com.mhealth.chat.demo.adapter.IconViewListener;
+import com.mhealth.chat.demo.data.TwilioChannel;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
@@ -30,7 +29,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class AddGroupActivity extends AppCompatActivity {
+public class AddGroupActivity extends BaseActivity implements IconViewListener {
 
     @Bind(R.id.txt_name)
     TextView txtName;
@@ -41,7 +40,7 @@ public class AddGroupActivity extends AppCompatActivity {
     @Bind(R.id.img_group)
     ImageView imageView;
 
-    BasicIPMessagingClient chatClient;
+    TwilioClient chatClient;
 
     private String selectedIcon = "";
 
@@ -69,14 +68,14 @@ public class AddGroupActivity extends AppCompatActivity {
                             dialog.dismiss();
                         }
                     })
-                    .adapter(new IconAdapter(getAssets().list("medical-icons")), new GridLayoutManager(this, 4))
+                    .adapter(new IconAdapter(this, getAssets().list("medical-icons"), this), new GridLayoutManager(this, 4))
                     .show();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-    private void selectIcon(String icon) {
+    @Override
+    public void selectIcon(String icon) {
         if (dialogIcons != null && dialogIcons.isShowing()) {
             dialogIcons.dismiss();
         }
@@ -113,9 +112,15 @@ public class AddGroupActivity extends AppCompatActivity {
                     public void onSuccess() {
                         channel.synchronize(new Constants.CallbackListener<Channel>() {
                             @Override
-                            public void onSuccess(Channel channel) {
-                                EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.GROUP_ADDED));
-                                close();
+                            public void onSuccess(final Channel channel) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        TwilioChannel.sync(channel);
+                                        EventBus.getDefault().post(new ActionEvent(ActionEvent.Action.GROUP_ADDED));
+                                        close();
+                                    }
+                                });
                             }
                         });
                     }
@@ -139,48 +144,4 @@ public class AddGroupActivity extends AppCompatActivity {
         this.finish();
     }
 
-    class IconAdapter extends RecyclerView.Adapter<IconViewHolder> {
-
-        private final String[] icons;
-
-        public IconAdapter(String[] icons) {
-            this.icons = icons;
-        }
-
-        @Override
-        public IconViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new IconViewHolder(LayoutInflater.from(AddGroupActivity.this).inflate(R.layout.icon_group_item,
-                    parent, false));
-        }
-
-        @Override
-        public void onBindViewHolder(IconViewHolder holder, int position) {
-            ImageLoader.getInstance().displayImage(IconHelper.getGroupIconUrl(icons[position]), holder.imageView);
-            holder.cardItem.setTag(icons[position]);
-        }
-
-        @Override
-        public int getItemCount() {
-            return icons.length;
-        }
-    }
-
-    class IconViewHolder extends RecyclerView.ViewHolder {
-
-        @Bind(R.id.img_group)
-        ImageView imageView;
-
-        @Bind(R.id.card_item)
-        View cardItem;
-
-        @OnClick(R.id.card_item)
-        public void clickCardItem(View view) {
-            selectIcon(view.getTag().toString());
-        }
-
-        public IconViewHolder(View itemView) {
-            super(itemView);
-            ButterKnife.bind(this, itemView);
-        }
-    }
 }

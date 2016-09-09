@@ -10,11 +10,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.mhealth.chat.demo.BasicIPMessagingClient;
 import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.R;
 import com.mhealth.chat.demo.adapter.ChatUserAdapter;
 import com.mhealth.chat.demo.databinding.FragmentChatUserListBinding;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.mhealth.chat.demo.util.ChatUtils;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Channels;
@@ -32,7 +32,7 @@ import java.util.Map;
 public class FragmentChatUserList extends Fragment {
 
     FragmentChatUserListBinding mBinding;
-    BasicIPMessagingClient mClient;
+    TwilioClient mClient;
 
     String mChannelUniqueName;
     Channel mChannel;

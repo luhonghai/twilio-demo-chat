@@ -186,23 +186,25 @@ $(function() {
 
             // Get the general chat channel, which is where all the messages are
             // sent in this simple application
-            print('Attempting to join "general" chat channel...');
-            var promise = messagingClient.getChannelByUniqueName('general');
+            var channelName = $("#txtChannel").val();
+            print('Attempting to join ' + channelName + ' chat channel...');
+
+            var promise = messagingClient.getChannelByUniqueName(channelName);
             promise.then(function(channel) {
                 generalChannel = channel;
                 if (!generalChannel) {
                     // If it doesn't exist, let's create it
                     messagingClient.createChannel({
-                        uniqueName: 'general',
-                        friendlyName: 'General Chat Channel'
+                        uniqueName: channelName,
+                        friendlyName: channelName
                     }).then(function(channel) {
-                        console.log('Created general channel:');
+                        console.log('Created channel:');
                         console.log(channel);
                         generalChannel = channel;
                         setupChannel();
                     });
                 } else {
-                    console.log('Found general channel:');
+                    console.log('Found channel:');
                     console.log(generalChannel);
                     setupChannel();
                 }

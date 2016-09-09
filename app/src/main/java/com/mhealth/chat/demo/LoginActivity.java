@@ -11,13 +11,13 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.gson.Gson;
 
 import com.mhealth.chat.demo.data.UserPreference;
+import com.mhealth.chat.demo.event.MessageClientEvent;
+import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.UserInfo;
 
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.Settings.Secure;
 import android.support.annotation.NonNull;
@@ -29,19 +29,17 @@ import android.content.SharedPreferences;
 import android.content.IntentFilter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.widget.Toast;
 import android.preference.PreferenceManager;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-
-public class LoginActivity extends FragmentActivity implements BasicIPMessagingClient.LoginListener,
+public class LoginActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener
 {
 
@@ -50,7 +48,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     private ProgressDialog         progressDialog;
     private String                 accessToken = null;
-    private BasicIPMessagingClient chatClient;
+    private TwilioClient chatClient;
     private String                 endpoint_id = "";
 
     private boolean           isReceiverRegistered;
@@ -61,12 +59,13 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     private GoogleSignInAccount acct;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        EventBus.getDefault().register(this);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .requestProfile()
@@ -81,9 +80,9 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
             {
                 // progressDialog.dismiss();
                 SharedPreferences sharedPreferences =
-                    PreferenceManager.getDefaultSharedPreferences(context);
+                        PreferenceManager.getDefaultSharedPreferences(context);
                 boolean sentToken =
-                    sharedPreferences.getBoolean(GcmPreferences.SENT_TOKEN_TO_SERVER, false);
+                        sharedPreferences.getBoolean(GcmPreferences.SENT_TOKEN_TO_SERVER, false);
                 if (sentToken) {
                     logger.i("GCM token remembered");
                 } else {
@@ -104,6 +103,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
                 startActivityForResult(signInIntent, RC_SIGN_IN);
             }
         });
+
         if (checkPlayServices()) {
             // Start IntentService to register this application with GCM.
             Intent intent = new Intent(this, RegistrationIntentService.class);
@@ -111,9 +111,8 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         }
     }
 
-
-
     private void loginTwilio(GoogleSignInAccount acct) {
+        progressDialog = ProgressDialog.show(LoginActivity.this, "", "Verify login information. Please wait...", true);
         this.acct = acct;
         String idChosen = acct.getEmail();
         logger.d("User id " + idChosen);
@@ -121,14 +120,14 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
                 Secure.getString(this.getApplicationContext().getContentResolver(), Secure.ANDROID_ID);
         String endpointIdFull =
                 idChosen + "-" + endpoint_id + "-android-" + getApplication().getPackageName();
-        String url = Uri.parse(getString(R.string.api_url) + "/token_ipm.php")
+        String url = Uri.parse(getString(R.string.api_url) + "/twilio_token.php")
                 .buildUpon()
                 .appendQueryParameter("identity", idChosen)
                 .appendQueryParameter("endpointId", endpointIdFull)
                 .build()
                 .toString();
         logger.d("url string : " + url);
-        new GetAccessTokenAsyncTask().execute(url);
+        LoginActivity.this.chatClient.doLogin(url);
     }
 
     @Override
@@ -136,43 +135,6 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
 
     }
 
-    private class GetAccessTokenAsyncTask extends AsyncTask<String, Void, String>
-    {
-        private String urlString;
-
-        @Override
-        protected void onPostExecute(String result)
-        {
-            super.onPostExecute(result);
-
-            LoginActivity.this.chatClient.doLogin(accessToken, LoginActivity.this, urlString);
-        }
-
-        @Override
-        protected void onPreExecute()
-        {
-            super.onPreExecute();
-            LoginActivity.this.progressDialog =
-                ProgressDialog.show(LoginActivity.this, "", "Logging in. Please wait...", true);
-        }
-
-        @Override
-        protected String doInBackground(String... params)
-        {
-            try {
-                urlString = params[0];
-                accessToken = new UserPreference(LoginActivity.this).getAccessToken();
-                if (accessToken.isEmpty()) {
-                    accessToken = new Gson().fromJson(HttpHelper.httpGet(params[0]), TokenData.class).getToken();
-                    new UserPreference(LoginActivity.this).setAccessToken(accessToken);
-                }
-                chatClient.setAccessToken(accessToken);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return accessToken;
-        }
-    }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -207,12 +169,16 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
             opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
                 @Override
                 public void onResult(GoogleSignInResult googleSignInResult) {
-                    if (progressDialog != null && progressDialog.isShowing()) {
-                        progressDialog.dismiss();
-                    }
+                    dismissProgressDialog();
                     handleSignInResult(googleSignInResult);
                 }
             });
+        }
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
         }
     }
 
@@ -232,15 +198,20 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         }
     }
 
-    @Override
-    public void onLoginStarted()
+    @Subscribe
+    public void onMessageClientEvent(MessageClientEvent event)
     {
-        logger.d("Log in started");
+        dismissProgressDialog();
+        if (event.getType() == MessageClientEvent.Type.READY
+                && acct != null && chatClient.getIpMessagingClient() != null) {
+            doFinishLogin();
+        } else {
+            Toast.makeText(getBaseContext(), "Could not login. Please try again!", Toast.LENGTH_LONG).show();
+            Auth.GoogleSignInApi.signOut(mGoogleApiClient);
+        }
     }
 
-    @Override
-    public void onLoginFinished()
-    {
+    private void doFinishLogin() {
         if (acct != null && chatClient.getIpMessagingClient() != null) {
             final UserInfo userInfo = chatClient.getIpMessagingClient().getMyUserInfo();
             if (userInfo != null) {
@@ -285,35 +256,13 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         this.finish();
     }
 
-    public String getBase64FromBitmap(Bitmap bitmap)
-    {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-        String string = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
-        // int    size = string.length();
-        return string;
-    }
-
-    @Override
-    public void onLoginError(String errorMessage)
-    {
-        progressDialog.dismiss();
-        logger.e("Error logging in : " + errorMessage);
-        Toast.makeText(getBaseContext(), errorMessage, Toast.LENGTH_LONG).show();
-    }
-
     @Override
     protected void onDestroy() {
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
+        EventBus.getDefault().unregister(this);
         super.onDestroy();
-    }
-
-    @Override
-    public void onLogoutFinished()
-    {
-        logger.d("Log out finished");
     }
 
     @Override
@@ -335,8 +284,8 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
     {
         if (!isReceiverRegistered) {
             LocalBroadcastManager.getInstance(this).registerReceiver(
-                registrationBroadcastReceiver,
-                new IntentFilter(GcmPreferences.REGISTRATION_COMPLETE));
+                    registrationBroadcastReceiver,
+                    new IntentFilter(GcmPreferences.REGISTRATION_COMPLETE));
             isReceiverRegistered = true;
         }
     }
@@ -353,7 +302,7 @@ public class LoginActivity extends FragmentActivity implements BasicIPMessagingC
         if (resultCode != ConnectionResult.SUCCESS) {
             if (apiAvailability.isUserResolvableError(resultCode)) {
                 apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-                    .show();
+                        .show();
             } else {
                 logger.i("This device is not supported.");
                 finish();
