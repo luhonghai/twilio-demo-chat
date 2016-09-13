@@ -25,6 +25,10 @@ handlers:
   static_files: index.js
   upload: index\.js
 
+- url: /docs\*.*
+  static_files: docs/*.*
+  upload: docs/*.*
+
 - url: /token_ipm\.php
   script: token_ipm.php
 
