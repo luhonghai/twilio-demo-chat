@@ -1,7 +1,6 @@
 package com.mhealth.chat.demo.adapter;
 
 import android.databinding.DataBindingUtil;
-import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,7 +33,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     Member me;
     Member friend;
 
-    String avatarUrlMe;
     String avatarUrlFriend;
 
     ArrayList<Message> mMessages;
@@ -43,10 +41,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     public ChatMessageAdapter(Member me, Member friend) {
         this.me = me;
         this.friend = friend;
-        avatarUrlMe = ChatUtils.getAvatarUrl(me);
+//        avatarUrlMe = ChatUtils.getAvatarUrl(me);
         avatarUrlFriend = ChatUtils.getAvatarUrl(friend);
         mMessages = new ArrayList<>();
-
     }
 
     public void addHistoryMessages(List<Message> messages) {
@@ -56,9 +53,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void addNewMessage(Message message) {
         synchronized (lock) {
-
             MyLog.log("addNewMessage()  ==> message index=" + message.getMessageIndex());
-
             if (message.getAuthor().equals(me.getUserInfo().getIdentity())) {
                 // this message comes from me => mark as SENT
                 for (int i = mMessages.size()-1; i >0; i--) {
@@ -72,14 +67,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 mMessages.add(message);
                 notifyDataSetChanged();
             }
-
-            MyLog.log("mMessages size=" + mMessages.size());
         }
-    }
-
-    public void checkLastSeenMessage() {
-        MyLog.log("friend last seen index=" + friend.getLastConsumedMessageIndex());
-        MyLog.log("me     last seen index=" + me.getLastConsumedMessageIndex());
     }
 
     public void addSendingMessage(Message message) {
@@ -91,6 +79,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             MyLog.log("addSendingMessage()  ==> message id=" + getMessageId(message));
 
             mMessages.add(sendingMessage);
+            notifyDataSetChanged();
+        }
+    }
+
+    public void updateMember(Member member) {
+        if (member.getUserInfo().getIdentity().equals(me.getUserInfo().getIdentity())) {
+            me = member;
+            notifyDataSetChanged();
+        } else if (member.getUserInfo().getIdentity().equals(friend.getUserInfo().getIdentity())) {
+            friend = member;
             notifyDataSetChanged();
         }
     }
@@ -161,14 +159,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             }
 
             // check read status
-            if (friend.getLastConsumedMessageIndex()!= null
-                    && friend.getLastConsumedMessageIndex() == message.getMessageIndex()) {
-                itemHolder.mBinding.imgReadStatus.setImageURI(Uri.parse(ChatUtils.getAvatarUrl(friend)));
+            if (friend.getLastConsumedMessageIndex() != null && friend.getLastConsumedMessageIndex() == message.getMessageIndex()) {
+                MyLog.log("OK; friend reached messagebody=" + message.getMessageBody());
+                itemHolder.mBinding.imgReadStatus.setImageURI(avatarUrlFriend);
             }
 
         } else if (holder instanceof FriendMessageViewHolder) {
             FriendMessageViewHolder itemHolder = (FriendMessageViewHolder) holder;
-            itemHolder.mBinding.imgAvatar.setImageURI(avatarUrlMe);
+            itemHolder.mBinding.imgAvatar.setImageURI(avatarUrlFriend);
             itemHolder.mBinding.tvMessageBody.setText(message.getMessageBody());
 
             if (position > 0 && mMessages.get(position-1).getAuthor().equals(message.getAuthor())) {
@@ -176,7 +174,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             } else {
                 itemHolder.mBinding.imgAvatar.setVisibility(View.VISIBLE);
             }
-
         }
     }
 
@@ -188,7 +185,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         } else {
             return VIEW_TYPE_FRIEND;
         }
-
     }
 
     @Override

@@ -7,8 +7,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -54,17 +52,10 @@ public class FragmentChatRecent extends Fragment {
         initChatList();
     }
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.chat_recent, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
     private void initUI() {
-        setHasOptionsMenu(true);
+        mBinding.toolbar.setTitle("My Chat");
         ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
         mBinding.toolbar.setNavigationOnClickListener(view1 -> getActivity().onBackPressed());
-        mBinding.toolbar.setTitle("My Chat");
 
         mBinding.btnLily.setOnClickListener(view1 -> {
             mBinding.etFriendId.setText("lily.van@manadr.com");
@@ -73,6 +64,7 @@ public class FragmentChatRecent extends Fragment {
                     .addToBackStack(null)
                     .commit();
         });
+
         mBinding.btnAlex.setOnClickListener(view1 -> {
             mBinding.etFriendId.setText("alex.lee@manadr.com");
             getFragmentManager().beginTransaction()
@@ -80,6 +72,12 @@ public class FragmentChatRecent extends Fragment {
                     .addToBackStack(null)
                     .commit();
         });
+
+
+
+
+
+
     }
 
     private void initChatList() {

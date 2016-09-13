@@ -28,13 +28,14 @@
             android:layout_marginRight="20dp"
             />
 
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <com.facebook.drawee.view.SimpleDraweeView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:src="@drawable/ic_msg_sending_16dp"
             android:layout_alignParentRight="true"
             android:layout_alignBottom="@+id/tv_message_body"
             android:id="@+id/img_read_status"
+            fresco:roundAsCircle="true"
             />
 
     </RelativeLayout>

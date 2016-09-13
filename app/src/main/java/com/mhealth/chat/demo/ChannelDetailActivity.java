@@ -20,6 +20,7 @@ import com.mhealth.chat.demo.adapter.IconViewListener;
 import com.mhealth.chat.demo.adapter.SelectMemberAdapter;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.TwilioUser;
+import com.mhealth.chat.demo.direct.ActivityIntent;
 import com.mhealth.chat.demo.event.ChannelEvent;
 import com.mhealth.chat.demo.twilio.TwilioService;
 import com.mhealth.chat.demo.view.UserInfoDialog;
@@ -35,7 +36,6 @@ import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.UserInfo;
 
 import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -523,7 +523,11 @@ public class ChannelDetailActivity extends AppCompatActivity implements MemberVi
 
                     @Override
                     public void clickChat(Member member) {
-
+                        Intent intent = new Intent(ChannelDetailActivity.this, ActivityIntent.class);
+                        intent.putExtra(ActivityIntent.EXTRA_FRAGMENT_NAME, ActivityIntent.FRAGMENT_CHAT_ONE_ONE);
+                        intent.putExtra(ActivityIntent.EXTRA_CHAT_TO_ID, member.getUserInfo().getIdentity());
+                        intent.putExtra(ActivityIntent.EXTRA_CHAT_TO_FRIENDLY_NAME, member.getUserInfo().getFriendlyName());
+                        startActivity(intent);
                     }
                 });
             }

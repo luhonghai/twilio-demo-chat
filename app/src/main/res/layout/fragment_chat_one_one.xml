@@ -94,7 +94,9 @@
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
                 android:layout_margin="10dp"
-                android:id="@+id/pb_loading" />
+                android:id="@+id/pb_loading"
+                android:visibility="gone" />
+
         </RelativeLayout>
 
     </com.mhealth.chat.demo.customview.SoftKeyboardHandledLinearLayout>
