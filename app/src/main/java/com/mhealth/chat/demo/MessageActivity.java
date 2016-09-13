@@ -24,9 +24,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.gson.Gson;
 import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.event.ChannelEvent;
+import com.mhealth.chat.demo.fcm.ChatConsultNotificationData;
+import com.mhealth.chat.demo.fcm.FCMSenderService;
+import com.mhealth.chat.demo.fcm.NotificationData;
+import com.mhealth.chat.demo.fcm.NotificationObject;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.ipmessaging.Channel;
@@ -39,6 +44,7 @@ import com.twilio.ipmessaging.Member;
 import com.twilio.ipmessaging.Members;
 import com.twilio.ipmessaging.Message;
 import com.twilio.ipmessaging.Messages;
+import com.twilio.ipmessaging.UserInfo;
 import com.twilio.ipmessaging.internal.Logger;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -51,10 +57,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import uk.co.ribot.easyadapter.EasyAdapter;
 
 public class MessageActivity extends BaseActivity implements ChannelListener, MessageViewHolder.MessageItemAdapter
@@ -941,7 +951,30 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
 
                 @Override
                 public void clickChat(Member member) {
-
+                    ChatConsultNotificationData notificationData = new ChatConsultNotificationData(
+                            MainApplication.get().getBasicClient().getIpMessagingClient().getMyUserInfo()
+                    );
+                    notificationData.setSessionId(UUID.randomUUID().toString());
+                    FCMSenderService.FCMRequest request = new FCMSenderService.FCMRequest.Builder()
+                            .to(member)
+                            .title("New chat request")
+                            .body("Hello from other side")
+                            .type(NotificationObject.Type.CHAT_CONSULT_REQUEST)
+                            .data(notificationData)
+                            .build();
+                    FCMSenderService.send(request).observeOn(AndroidSchedulers.mainThread())
+                            .subscribeOn(Schedulers.newThread())
+                            .subscribe(new Action1<FCMSenderService.FCMResponse>() {
+                                @Override
+                                public void call(FCMSenderService.FCMResponse response) {
+                                    logger.d("FCM response: "  + new Gson().toJson(response));
+                                }
+                            }, new Action1<Throwable>() {
+                                @Override
+                                public void call(Throwable throwable) {
+                                    throwable.printStackTrace();
+                                }
+                            });;
                 }
             });
         }
@@ -953,6 +986,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         final String input = inputText.getText().toString();
         if (!input.equals("")) {
             final Messages messagesObject = this.channel.getMessages();
+
             inputText.setText("");
             progressBarBottom.setVisibility(View.VISIBLE);
             new AsyncTask<Void, Void, Void>() {
@@ -1082,10 +1116,15 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
     {
         if (member != null) {
             TextView typingIndc = (TextView)findViewById(R.id.typingIndicator);
-            String   text = member.getUserInfo().getIdentity() + " is typing ...";
+            String   text = getMemberName(member.getUserInfo()) + " is typing ...";
             typingIndc.setText(text);
             logger.d(text);
         }
+    }
+
+    private String getMemberName(UserInfo userInfo) {
+        return (userInfo.getFriendlyName() != null && !userInfo.getFriendlyName().isEmpty())
+                ?  userInfo.getFriendlyName() : userInfo.getIdentity();
     }
 
     @Override
@@ -1094,7 +1133,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
         if (member != null) {
             TextView typingIndc = (TextView)findViewById(R.id.typingIndicator);
             typingIndc.setText(null);
-            logger.d(member.getUserInfo().getIdentity() + " ended typing");
+            logger.d(getMemberName(member.getUserInfo()) + " ended typing");
         }
     }
 

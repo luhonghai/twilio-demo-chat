@@ -10,13 +10,14 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.event.ChannelEvent;
+import com.mhealth.chat.demo.fcm.ChatConsultNotificationData;
+import com.mhealth.chat.demo.fcm.NotificationObject;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.conversations.Conversation;
 import com.twilio.conversations.ConversationCallback;
 import com.twilio.conversations.IncomingInvite;
 import com.twilio.conversations.LocalMedia;
 import com.twilio.conversations.Participant;
-import com.twilio.conversations.TwilioConversationsClient;
 import com.twilio.conversations.TwilioConversationsException;
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Channels;
@@ -55,7 +56,35 @@ public class BaseActivity extends AppCompatActivity {
     {
         super.onCreate(savedInstanceState);
         callInviteDialog = new UserInfoDialog(this);
+        checkIntent(getIntent());
         EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        checkIntent(intent);
+    }
+
+    private void checkIntent(Intent intent) {
+        NotificationObject notificationObject = NotificationObject.from(intent);
+        if (notificationObject != null) {
+            logger.d("Found notification object from intent");
+            onNotificationObjectFound(notificationObject);
+        }
+    }
+
+    @Subscribe
+    public void onNotificationEvent(NotificationObject object) {
+        onNotificationObjectFound(object);
+    }
+
+    public void onNotificationObjectFound(NotificationObject object) {
+        logger.d("onNotificationObjectFound " + object.getType().getName());
+        if (object.getType() == NotificationObject.Type.CHAT_CONSULT_REQUEST) {
+            ChatConsultNotificationData data = (ChatConsultNotificationData) object.getData();
+            logger.d("Request session ID " + data.getSessionId());
+        }
     }
 
     @Override

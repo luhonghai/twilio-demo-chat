@@ -8,12 +8,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.Gson;
 import com.mhealth.chat.demo.HttpHelper;
 import com.mhealth.chat.demo.Logger;
 import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.data.UserPreference;
 import com.mhealth.chat.demo.event.MessageClientEvent;
+import com.mhealth.chat.demo.fcm.FCMSenderService;
 import com.mhealth.chat.demo.service.MessageIncomingService;
 import com.twilio.common.AccessManager;
 import com.twilio.conversations.AudioOutput;
@@ -261,6 +263,7 @@ public class TwilioClient
     public void setGCMToken(String gcmToken)
     {
         this.gcmToken = gcmToken;
+        setupGcmToken();
     }
 
     public void doLogin(String url)
@@ -282,7 +285,13 @@ public class TwilioClient
 
     private void setupGcmToken()
     {
-        ipMessagingClient.registerGCMToken(getGCMToken(), new StatusListener() {
+        if (ipMessagingClient == null) return;
+        String token = getGCMToken();
+        if (token == null || token.isEmpty()) {
+            token = FirebaseInstanceId.getInstance().getToken();
+        }
+        FCMSenderService.saveFcmToken(ipMessagingClient.getMyUserInfo(), token);
+        ipMessagingClient.registerGCMToken(token, new StatusListener() {
             @Override
             public void onError(ErrorInfo errorInfo)
             {

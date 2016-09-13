@@ -11,7 +11,10 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
 import com.mhealth.chat.demo.data.ChatConsultSession;
+import com.mhealth.chat.demo.fcm.NotificationObject;
 import com.twilio.ipmessaging.Channel;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +40,13 @@ public class GCMListenerService extends FirebaseMessagingService
 
     private void notify(HashMap<String, String> data, RemoteMessage remoteMessage)
     {
+
         boolean isInApp = MainApplication.get().isInApplication();
         logger.d("Is in app " + isInApp);
         Log.d("Notification", "notify data " + new Gson().toJson(data));
         Log.d("Notification", "notify body " + remoteMessage.getNotification().getBody());
         Log.d("Notification", "notify title " + remoteMessage.getNotification().getTitle());
+
         Class<?> targetActivity = LoginActivity.class;
         String currentChannelId =  MainApplication.get().getCurrentChannelSid();
         String channelId = "";
@@ -78,6 +83,11 @@ public class GCMListenerService extends FirebaseMessagingService
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         String message;
         String title = "ManaDr Chat Notification";
+        NotificationObject notificationObject = NotificationObject.from(data);
+        if (notificationObject != null) {
+            logger.d("Found notification object. Post event");
+            EventBus.getDefault().post(notificationObject);
+        }
         if (data.containsKey("channel_sid")) {
             message = data.get("text_message");
             if (message == null || message.isEmpty()) {
