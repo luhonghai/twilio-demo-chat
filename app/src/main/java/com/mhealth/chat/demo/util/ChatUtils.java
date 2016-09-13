@@ -28,4 +28,8 @@ public class ChatUtils {
         return null;
     }
 
+    public static String generateChannelUniqueName(String sessionId) {
+        return "chat_consult_" + sessionId;
+    }
+
 }

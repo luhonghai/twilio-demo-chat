@@ -362,6 +362,7 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
         MyLog.log("checkMemberInChannelToInitChatMessageAdapter()");
         Channel channel = mClient.getIpMessagingClient().getChannels().getChannelByUniqueName(mChannelUniqueName);
 
+
         if (channel.getMembers().getMembers().length == 2) {
             Member me;
             Member friend;

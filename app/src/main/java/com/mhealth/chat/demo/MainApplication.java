@@ -8,9 +8,11 @@ import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.facebook.drawee.backends.pipeline.Fresco;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.mhealth.chat.demo.data.DataPreference;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.TwilioUser;
+import com.mhealth.chat.demo.direct.MyLog;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -49,6 +51,9 @@ public class MainApplication extends Application
         basicClient = new TwilioClient(getApplicationContext());
         ImageLoader.getInstance().init(ImageLoaderConfiguration.createDefault(this));
         Fresco.initialize(this);
+
+        MyLog.log("deviceToken=" + FirebaseInstanceId.getInstance().getToken());
+
     }
 
     public TwilioClient getBasicClient()
