@@ -6,6 +6,12 @@
             android:id="@+id/chat_group"
             android:icon="@drawable/ic_group_black_24dp"
             android:title="Chat group" />
+
+        <item
+            android:id="@+id/chat_direct"
+            android:icon="@drawable/ic_send_black_24dp"
+            android:title="My Chat" />
+
         <item
             android:id="@+id/nav_logout"
             android:icon="@drawable/ic_power_settings_new_black_24dp"

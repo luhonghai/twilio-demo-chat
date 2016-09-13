@@ -31,7 +31,11 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.data.UserPreference;
+
+import com.mhealth.chat.demo.direct.ActivityIntent;
+
 import com.mhealth.chat.demo.twilio.TwilioClient;
+
 import com.twilio.ipmessaging.Channel;
 import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.ErrorInfo;
@@ -321,6 +325,10 @@ public class ChannelActivity extends BaseActivity implements NavigationView.OnNa
             if (drawer.isDrawerOpen(GravityCompat.START)) {
                 drawer.closeDrawer(GravityCompat.START);
             }
+        } else if (item.getItemId() == R.id.chat_direct) {
+            ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
+            Intent intent = new Intent(this, ActivityIntent.class);
+            startActivity(intent);
         }
         return false;
     }

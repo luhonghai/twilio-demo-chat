@@ -4,7 +4,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
+import android.text.Html;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -12,6 +15,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
 import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.fcm.NotificationObject;
+import com.mhealth.chat.demo.fcm.Const;
 import com.twilio.ipmessaging.Channel;
 
 import org.greenrobot.eventbus.EventBus;
@@ -26,7 +30,18 @@ public class GCMListenerService extends FirebaseMessagingService
     @Override
     public void onMessageReceived(RemoteMessage message)
     {
-        logger.d("onMessageReceived for GCM");
+        logger.d("onMessageReceived for FCM");
+
+        String notifyType = message.getData().get("type");
+        if (notifyType != null) {
+            if (notifyType.equals(Const.FCM_TYPE_CHAT_CONSULTANT_REQUEST)) {
+
+            } else if (notifyType.equals(Const.FCM_TYPE_CHAT_CONSULTANT_RESPONSE)) {
+
+            }
+        }
+
+
         Map data = message.getData();
 
         HashMap<String, String> pushNotification = new HashMap<String, String>();
@@ -41,6 +56,7 @@ public class GCMListenerService extends FirebaseMessagingService
     private void notify(HashMap<String, String> data, RemoteMessage remoteMessage)
     {
 
+    private void notify(HashMap<String, String> data, RemoteMessage remoteMessage) {
         boolean isInApp = MainApplication.get().isInApplication();
         logger.d("Is in app " + isInApp);
         Log.d("Notification", "notify data " + new Gson().toJson(data));
@@ -117,4 +133,26 @@ public class GCMListenerService extends FirebaseMessagingService
 
         notificationManager.notify(0, notificationBuilder.build());
     }
+
+    /**
+     * Create and show a simple notification containing the received FCM message
+     */
+    private void sendNotification(PendingIntent pendingIntent, String title, String message) {
+        CharSequence contentText = "";
+        if (message != null && message.length() > 0) {
+            contentText = Html.fromHtml(message);
+        }
+        Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        android.support.v4.app.NotificationCompat.Builder notificationBuilder = new android.support.v7.app.NotificationCompat.Builder(this)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pendingIntent);
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(0, notificationBuilder.build());
+    }
+
 }

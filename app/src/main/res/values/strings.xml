@@ -42,6 +42,7 @@
     <string name="userAvatar">User avatar</string>
     <string name="conversationStatus">status</string>
 
+
     <string name="log_out">Log Out</string>
     <string name="permissions_needed">Camera and Microphone permissions needed. Please allow in App Settings for additional functionality.</string>
     <string name="error_retrieving_access_token">Error retrieving video call access token from the server.</string>
@@ -120,4 +121,6 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
+
+    <string name="title_chat_direct">Chat Direct</string>
 </resources>
