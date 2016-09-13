@@ -85,6 +85,21 @@
         <activity android:name=".ConversationActivity"
             />
         <service android:name=".service.MessageIncomingService"/>
+
+        <activity
+            android:name=".direct.ActivityChatConsultantRequest"
+            android:screenOrientation="portrait"
+            android:theme="@style/TransparentCompat"
+            >
+
+            <intent-filter>
+                <action android:name="CHAT_CONSULTANT_REQUEST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+        </activity>
+
+
     </application>
 
 </manifest>
