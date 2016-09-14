@@ -4,7 +4,6 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -53,25 +52,25 @@ public class FragmentChatRecent extends Fragment {
     }
 
     private void initUI() {
-        mBinding.toolbar.setTitle("My Chat");
-        ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
-        mBinding.toolbar.setNavigationOnClickListener(view1 -> getActivity().onBackPressed());
-
-        mBinding.btnLily.setOnClickListener(view1 -> {
-            mBinding.etFriendId.setText("lily.van@manadr.com");
-            getFragmentManager().beginTransaction()
-                    .add(android.R.id.content, FragmentChatOneOne.getInstance("lily.van@manadr.com"))
-                    .addToBackStack(null)
-                    .commit();
-        });
-
-        mBinding.btnAlex.setOnClickListener(view1 -> {
-            mBinding.etFriendId.setText("alex.lee@manadr.com");
-            getFragmentManager().beginTransaction()
-                    .add(android.R.id.content, FragmentChatOneOne.getInstance("alex.lee@manadr.com"))
-                    .addToBackStack(null)
-                    .commit();
-        });
+//        mBinding.toolbar.setTitle("My Chat");
+//        ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
+//        mBinding.toolbar.setNavigationOnClickListener(view1 -> getActivity().onBackPressed());
+//
+//        mBinding.btnLily.setOnClickListener(view1 -> {
+//            mBinding.etFriendId.setText("lily.van@manadr.com");
+//            getFragmentManager().beginTransaction()
+//                    .add(android.R.id.content, FragmentChatOneOne.getInstance("lily.van@manadr.com"))
+//                    .addToBackStack(null)
+//                    .commit();
+//        });
+//
+//        mBinding.btnAlex.setOnClickListener(view1 -> {
+//            mBinding.etFriendId.setText("alex.lee@manadr.com");
+//            getFragmentManager().beginTransaction()
+//                    .add(android.R.id.content, FragmentChatOneOne.getInstance("alex.lee@manadr.com"))
+//                    .addToBackStack(null)
+//                    .commit();
+//        });
 
 
 

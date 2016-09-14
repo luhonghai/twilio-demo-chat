@@ -56,6 +56,16 @@
                         android:textSize="10dp"
                         android:visibility="gone" />
 
+                    <TextView
+                        android:id="@+id/tv_waiting_member"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="#0000"
+                        android:padding="5dp"
+                        android:text="@string/waiting_for_member_join_channel"
+                        android:textColor="#333"
+                        android:textSize="10dp" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

@@ -28,9 +28,8 @@ import com.google.gson.Gson;
 import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.event.ChannelEvent;
-import com.mhealth.chat.demo.fcm.ChatConsultNotificationData;
+import com.mhealth.chat.demo.fcm.ChatConsultRequestData;
 import com.mhealth.chat.demo.fcm.FCMSenderService;
-import com.mhealth.chat.demo.fcm.NotificationData;
 import com.mhealth.chat.demo.fcm.NotificationObject;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 import com.mhealth.chat.demo.view.UserInfoDialog;
@@ -951,7 +950,7 @@ public class MessageActivity extends BaseActivity implements ChannelListener, Me
 
                 @Override
                 public void clickChat(Member member) {
-                    ChatConsultNotificationData notificationData = new ChatConsultNotificationData(
+                    ChatConsultRequestData notificationData = new ChatConsultRequestData(
                             MainApplication.get().getBasicClient().getIpMessagingClient().getMyUserInfo()
                     );
                     notificationData.setSessionId(UUID.randomUUID().toString());

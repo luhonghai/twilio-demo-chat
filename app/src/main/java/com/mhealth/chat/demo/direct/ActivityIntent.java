@@ -26,7 +26,7 @@ public class ActivityIntent extends AppCompatActivity {
             if (fragmentName.equals(FRAGMENT_CHAT_ONE_ONE)) {
                 String userId = getIntent().getStringExtra(EXTRA_CHAT_TO_ID);
                 String username = getIntent().getStringExtra(EXTRA_CHAT_TO_FRIENDLY_NAME);
-                targetFragment = FragmentChatOneOne.getInstance(userId, username);
+//                targetFragment = FragmentChatOneOne.getInstance(userId, username);
             }
 
             if (targetFragment != null) {

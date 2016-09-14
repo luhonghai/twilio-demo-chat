@@ -6,11 +6,11 @@ import com.twilio.ipmessaging.UserInfo;
  * Created by luhonghai on 9/13/16.
  */
 
-public class ChatConsultNotificationData extends NotificationData {
+public class ChatConsultRequestData extends NotificationData {
 
     private String sessionId;
 
-    public ChatConsultNotificationData(UserInfo myUserInfo) {
+    public ChatConsultRequestData(UserInfo myUserInfo) {
         super(myUserInfo);
     }
 

@@ -93,7 +93,7 @@
             >
 
             <intent-filter>
-                <action android:name="CHAT_CONSULTANT_REQUEST" />
+                <action android:name="CHAT_CONSULT_REQUEST" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 

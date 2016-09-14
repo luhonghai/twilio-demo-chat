@@ -10,7 +10,7 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.mhealth.chat.demo.data.ChatConsultSession;
 import com.mhealth.chat.demo.event.ChannelEvent;
-import com.mhealth.chat.demo.fcm.ChatConsultNotificationData;
+import com.mhealth.chat.demo.fcm.ChatConsultRequestData;
 import com.mhealth.chat.demo.fcm.NotificationObject;
 import com.mhealth.chat.demo.view.UserInfoDialog;
 import com.twilio.conversations.Conversation;
@@ -82,7 +82,7 @@ public class BaseActivity extends AppCompatActivity {
     public void onNotificationObjectFound(NotificationObject object) {
         logger.d("onNotificationObjectFound " + object.getType().getName());
         if (object.getType() == NotificationObject.Type.CHAT_CONSULT_REQUEST) {
-            ChatConsultNotificationData data = (ChatConsultNotificationData) object.getData();
+            ChatConsultRequestData data = (ChatConsultRequestData) object.getData();
             logger.d("Request session ID " + data.getSessionId());
         }
     }

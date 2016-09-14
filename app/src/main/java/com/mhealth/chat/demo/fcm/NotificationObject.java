@@ -18,10 +18,10 @@ public class NotificationObject<T extends NotificationData> {
 
     public enum Type {
         DEFAULT("default"),
-        CHAT_CONSULT_REQUEST("CHAT_CONSULT_REQUEST", ChatConsultNotificationData.class),
-        CHAT_CONSULT_REJECT("CHAT_CONSULT_REJECT", ChatConsultNotificationData.class),
-        CHAT_CONSULT_ACCEPT("CHAT_CONSULT_ACCEPT", ChatConsultNotificationData.class),
-        CHAT_CONSULT_CLOSE("CHAT_CONSULT_CLOSE", ChatConsultNotificationData.class),
+        CHAT_CONSULT_REQUEST("CHAT_CONSULT_REQUEST", ChatConsultRequestData.class),
+        CHAT_CONSULT_REJECT("CHAT_CONSULT_REJECT", ChatConsultRequestData.class),
+        CHAT_CONSULT_ACCEPT("CHAT_CONSULT_ACCEPT", ChatConsultRequestData.class),
+        CHAT_CONSULT_CLOSE("CHAT_CONSULT_CLOSE", ChatConsultRequestData.class),
         ;
         public static Type getByName(String name) {
             for (Type type : values()) {
@@ -94,4 +94,12 @@ public class NotificationObject<T extends NotificationData> {
     public T getData() {
         return data;
     }
+
+    public Bundle getBundle() {
+        Bundle bundle = new Bundle();
+        bundle.putString(KEY_TYPE, type.getName());
+        bundle.putString(KEY_DATA, getDataJson());
+        return bundle;
+    }
+
 }

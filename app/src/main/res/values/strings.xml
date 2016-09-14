@@ -123,4 +123,12 @@
     <string name="pref_title_vibrate">Vibrate</string>
 
     <string name="title_chat_direct">Chat Direct</string>
+    <string name="chat_consult_request_title">Chat Consultant Request</string>
+    <string name="chat_consult_request_content">%s wants to start chat consultant with you?</string>
+    <string name="title_chat_contacts">Chat Contacts</string>
+    <string name="title_chat_consult_acceptance">Chat Consult Acceptance</string>
+    <string name="content_chat_consult_acceptance">%s is ready to chat you</string>
+    <string name="waiting_for_member_join_channel">Waiting for %s to join...</string>
+    <string name="member_is_typing">%s is typing...</string>
+
 </resources>

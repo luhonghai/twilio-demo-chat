@@ -33,10 +33,9 @@ public abstract class NotificationData {
     public NotificationData(UserInfo userInfo) {
         this.senderToken = FirebaseInstanceId.getInstance().getToken();
         this.senderId = userInfo.getIdentity();
-        this.senderFriendlyName = userInfo.getFriendlyName();
-        try {
-            this.senderAvatarUrl = userInfo.getAttributes().optString("avatar_url");
-        } catch (Exception e) {}
+        this.senderFriendlyName = (userInfo.getFriendlyName() == null || userInfo.getFriendlyName().equals("")
+                ? userInfo.getIdentity() : userInfo.getFriendlyName());
+        this.senderAvatarUrl = userInfo.getAttributes().optString("avatar_url");
     }
 
     public String getSenderToken() {
