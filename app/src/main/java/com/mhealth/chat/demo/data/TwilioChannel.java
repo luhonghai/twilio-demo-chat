@@ -29,9 +29,13 @@ public class TwilioChannel extends TwilioObject {
     }
 
     public static class Attribute {
-        @SerializedName("group_icon")
+        @SerializedName(ATTR_GROUP_ICON)
         @Expose
         private String icon;
+
+        @SerializedName(ATTR_CLOSED_CHANNEL)
+        @Expose
+        private boolean closed;
 
         public String getIcon() {
             if (icon == null) return "";
@@ -40,6 +44,14 @@ public class TwilioChannel extends TwilioObject {
 
         public void setIcon(String icon) {
             this.icon = icon;
+        }
+
+        public boolean isClosed() {
+            return closed;
+        }
+
+        public void setClosed(boolean closed) {
+            this.closed = closed;
         }
     }
 

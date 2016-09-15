@@ -1,6 +1,5 @@
 package com.mhealth.chat.demo.fcm;
 
-import com.mhealth.chat.demo.fcm.ChatConsultRequestData;
 import com.twilio.ipmessaging.UserInfo;
 
 /**
