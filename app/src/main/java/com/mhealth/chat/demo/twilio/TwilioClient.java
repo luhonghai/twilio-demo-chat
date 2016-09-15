@@ -47,6 +47,8 @@ public class TwilioClient
 
     private boolean isReady;
 
+    private boolean isConnecting;
+
     public TwilioClient(Context context)
     {
         super();
@@ -113,6 +115,7 @@ public class TwilioClient
             ipMessagingClient.setIncomingIntent(pendingIntent);
             EventBus.getDefault().post(new MessageClientEvent(MessageClientEvent.Type.READY, ipMessagingClient));
             isReady = true;
+            isConnecting = false;
         }
 
         @Override
@@ -120,6 +123,7 @@ public class TwilioClient
             MainApplication.get().showError(errorInfo);
             EventBus.getDefault().post(new MessageClientEvent(MessageClientEvent.Type.ERROR, ipMessagingClient));
             isReady = false;
+            isConnecting = false;
         }
     };
 
@@ -266,13 +270,24 @@ public class TwilioClient
         setupGcmToken();
     }
 
+    public void reconnect() {
+        doLogin(null);
+    }
+
     public void doLogin(String url)
     {
+        if (isConnecting) return;
+        isConnecting = true;
         urlString = url;
         accessToken = new UserPreference(context).getAccessToken();
-        IPMessagingClient.setLogLevel(android.util.Log.DEBUG);
+        //IPMessagingClient.setLogLevel(android.util.Log.DEBUG);
         if (accessToken == null || accessToken.isEmpty()) {
-            new GetAccessTokenAsyncTask().execute(url);
+            if (url != null && url.length() > 0) {
+                new GetAccessTokenAsyncTask().execute(url);
+            } else {
+                logger.e("No token generator URL found");
+                isConnecting = false;
+            }
         } else {
             createClientWithAccessManager();
         }
@@ -331,6 +346,10 @@ public class TwilioClient
 
     public void setReady(boolean ready) {
         isReady = ready;
+    }
+
+    public boolean isConnecting() {
+        return isConnecting;
     }
 
     private class GetAccessTokenAsyncTask extends AsyncTask<String, Void, String>
