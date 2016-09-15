@@ -8,4 +8,5 @@
     <color name="colorGreen">#009933</color>
     <color name="colorRed">#ff3300</color>
     <color name="message_background_gray">#f1f0f0</color>
+    <color name="transparent">#00000000</color>
 </resources>

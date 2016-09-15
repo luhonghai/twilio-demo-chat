@@ -7,8 +7,6 @@ import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.twilio.TwilioService;
 import com.twilio.ipmessaging.Channel;
 
-import java.util.List;
-
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
@@ -18,6 +16,9 @@ import rx.schedulers.Schedulers;
  */
 
 public class TwilioChannel extends TwilioObject {
+
+    public static final String ATTR_CLOSED_CHANNEL = "closed_channel";
+    public static final String ATTR_GROUP_ICON = "group_icon";
 
     public String getAttributes() {
         return attributes;

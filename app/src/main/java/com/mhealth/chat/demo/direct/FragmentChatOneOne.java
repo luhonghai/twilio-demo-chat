@@ -1,16 +1,21 @@
 package com.mhealth.chat.demo.direct;
 
+import android.app.ProgressDialog;
 import android.databinding.DataBindingUtil;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -18,8 +23,10 @@ import com.mhealth.chat.demo.MainApplication;
 import com.mhealth.chat.demo.R;
 import com.mhealth.chat.demo.adapter.ChatMessageAdapter;
 import com.mhealth.chat.demo.customview.SoftKeyboardHandledLinearLayout;
+import com.mhealth.chat.demo.data.TwilioChannel;
 import com.mhealth.chat.demo.databinding.FragmentChatOneOneBinding;
 import com.mhealth.chat.demo.fcm.ChatConsultAcceptData;
+import com.mhealth.chat.demo.fcm.ChatConsultCloseData;
 import com.mhealth.chat.demo.fcm.ChatConsultRequestData;
 import com.mhealth.chat.demo.fcm.FCMSenderService;
 import com.mhealth.chat.demo.fcm.NotificationObject;
@@ -31,6 +38,8 @@ import com.twilio.ipmessaging.Constants;
 import com.twilio.ipmessaging.ErrorInfo;
 import com.twilio.ipmessaging.Member;
 import com.twilio.ipmessaging.Message;
+
+import org.json.JSONException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -48,15 +57,16 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
     private static final int LOAD_HISTORY_SIZE = 15;
 
     FragmentChatOneOneBinding mBinding;
+
     ChatConsultRequestData mChatConsultRequestData;
+    Channel mChannel;
 
     private String mFriendId;
     private String mFriendlyName;
-
-    TwilioClient mClient;
-
     String mChannelUniqueName;
-    Channel mChannel;
+
+    boolean newChatConsultSession;
+    TwilioClient mClient;
 
     ChatMessageAdapter mChatMessageAdapter;
     boolean downloadingHistory;
@@ -64,32 +74,26 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
 
     Message lastMessageAdd;
 
+    ProgressDialog mProgressDialog;
+
     public static FragmentChatOneOne getInstance(ChatConsultRequestData request) {
         FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
+        fragmentChatOneOne.newChatConsultSession = true;
         fragmentChatOneOne.mChatConsultRequestData = request;
-        fragmentChatOneOne.mFriendId = request.getSenderId();
-        fragmentChatOneOne.mFriendlyName = request.getSenderFriendlyName();
         return fragmentChatOneOne;
     }
 
-//    public static FragmentChatOneOne getInstance(String friendId, String friendlyName) {
-//        FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
-//        fragmentChatOneOne.mFriendId = friendId;
-//        fragmentChatOneOne.mFriendlyName = friendlyName;
-//        return fragmentChatOneOne;
-//    }
-//
-//    public static FragmentChatOneOne getInstance(Member friend) {
-//        FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
-//        fragmentChatOneOne.mFriend = friend;
-//        fragmentChatOneOne.mFriendId = friend.getUserInfo().getIdentity();
-//        return fragmentChatOneOne;
-//    }
+    public static FragmentChatOneOne getInstance(Channel channel) {
+        FragmentChatOneOne fragmentChatOneOne = new FragmentChatOneOne();
+        fragmentChatOneOne.newChatConsultSession = false;
+        fragmentChatOneOne.mChannel = channel;
+        return fragmentChatOneOne;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setHasOptionsMenu(true);
+        setHasOptionsMenu(true);
     }
 
     @Nullable
@@ -104,42 +108,46 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
         super.onViewCreated(view, savedInstanceState);
 
         mClient = MainApplication.get().getBasicClient();
-        mChannelUniqueName = ChatUtils.generateChannelUniqueName(mChatConsultRequestData.getSessionId());
-        MyLog.log("mChannelUniqueName=" + mChannelUniqueName);
-        initUI();
-        connectToChannel();
-    }
 
-//    @Override
-//    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//        inflater.inflate(R.menu.chat_one_one, menu);
-//        super.onCreateOptionsMenu(menu, inflater);
-//    }
-
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        if (item.getItemId() == R.id.action_get_me_last_seen) {
-//            MyLog.log("me last seen=" + me.getLastConsumedMessageIndex() + "; channel last seen=" + mChannel.getMessages().getLastConsumedMessageIndex());
-//            return true;
-//        } else if (item.getItemId() == R.id.action_set_me_last_seen) {
-//            MyLog.log("set last seen=" + lastMessageAdd.getMessageIndex());
-//            mChannel.getMessages().setLastConsumedMessageIndex(lastMessageAdd.getMessageIndex());
-//            return true;
-//        } else if (item.getItemId() == R.id.action_get_friend_last_seen) {
-//            MyLog.log("friend last seen=" + mFriend.getLastConsumedMessageIndex());
-//            return true;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
-
-    private void initUI() {
-        // toolbar setting
-        if (mFriendlyName != null) {
-            mBinding.toolbar.setTitle(mFriendlyName);
+        if (newChatConsultSession) {
+            mChannelUniqueName = ChatUtils.generateChannelUniqueName(mChatConsultRequestData.getSessionId());
+            mFriendId = mChatConsultRequestData.getSenderId();
+            mFriendlyName = mChatConsultRequestData.getSenderFriendlyName();
+            createChannel();
         } else {
-            mBinding.toolbar.setTitle(mFriendId);
+            Member memberFriend = mChannel.getMembers().getMembers()[0].getUserInfo().getIdentity()
+                    .equals(mClient.getIpMessagingClient().getMyUserInfo().getIdentity())
+                    ? mChannel.getMembers().getMembers()[1] : mChannel.getMembers().getMembers()[0];
+            mFriendId = memberFriend.getUserInfo().getIdentity();
+            mFriendlyName = memberFriend.getUserInfo().getFriendlyName();
+            openChannel();
         }
 
+        initUI();
+
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.chat_one_one, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_close_chat_consult) {
+            closeChatConsult();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void initUI() {
+        mProgressDialog = new ProgressDialog(getActivity(), R.style.ProgressDialogDim);
+
+        // toolbar setting
+        mBinding.toolbar.setTitle(mFriendlyName);
+        mBinding.tvTypingIndicator.setText(mFriendlyName + " is typing...");
         ((AppCompatActivity)getActivity()).setSupportActionBar(mBinding.toolbar);
         mBinding.toolbar.setNavigationOnClickListener(view1 -> getActivity().onBackPressed());
 
@@ -202,43 +210,10 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
         });
     }
 
-    private void connectToChannel() {
-        MyLog.log("connectToChannel()");
+    private void createChannel() {
+        MyLog.log("createChannel()");
         mBinding.tvWaitingMember.setText(String.format(getString(R.string.waiting_for_member_join_channel), mFriendlyName));
         mBinding.tvWaitingMember.setVisibility(View.VISIBLE);
-
-        // 1. check channel exist in list channel
-        // 1.1 exist => check status
-        // 1.1.1 JOINED => do nothing
-        // 1.1.2 INVITED => join
-        // 1.2 not exist => create => join => invite
-
-        // check channel existence
-//        Channel[] channels = mClient.getIpMessagingClient().getChannels().getChannels();
-//        for (int i = 0; i < channels.length; i++) {
-//            Channel channel = channels[i];
-//             if (channel.getUniqueName().equals(mChannelUniqueName)) { // if channel exist
-//                 mChannel = channel;
-//
-//                 if (channel.getStatus() == Channel.ChannelStatus.JOINED) { // if joined
-//                     // do nothing
-//                     MyLog.log("JOINED; " + mChannelUniqueName);
-//
-//                     channel.setListener(FragmentChatOneOne.this);
-//                     if (channel.getMembers().getMembers().length == 1) { // if friend not joined yet
-//                         inviteFriend();
-//                     } else {
-//                         // both of two users JOINED this channel
-//                         checkMemberInChannelToInitChatMessageAdapter();
-//                         getMessageHistory(null, mChannel);
-//                     }
-//                 } else if (channel.getStatus() == Channel.ChannelStatus.INVITED) { // automatically join
-//                     MyLog.log("INVITED; " + mChannelUniqueName);
-//                     joinChannel(channel);
-//                 }
-//                 return;
-//             }
-//        }
 
         // if channel not exist, create channel + join + invite
         Map<String, Object> map = new HashMap<>();
@@ -250,31 +225,26 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
             @Override
             public void onCreated(Channel channel) {
                 MyLog.log("createChannel() --> onCreated() --> channelUniqueName=" + channel.getUniqueName());
-
                 mChannel = channel;
-
                 // join channel
-                joinChannel(channel);
-
-                // invite friend
-                inviteFriend();
-
-                // send notification
-                sendFCMNotification();
+                joinChannel();
             }
         });
     }
 
-    private void joinChannel(Channel channel) {
-        MyLog.log("joinChannel(); " + channel.getUniqueName());
-        channel.join(new Constants.StatusListener() {
+    private void joinChannel() {
+        MyLog.log("joinChannel(); " + mChannel.getUniqueName());
+        mChannel.join(new Constants.StatusListener() {
             @Override
             public void onSuccess() {
                 MyLog.log("channel.join() ==> onSuccess()");
-                checkMemberInChannelToInitChatMessageAdapter();
-                channel.setListener(FragmentChatOneOne.this);
+                mChannel.setListener(FragmentChatOneOne.this);
+
+                // invite friend
+                inviteFriend();
             }
         });
+
     }
 
     private void inviteFriend() {
@@ -284,11 +254,13 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
             @Override
             public void onSuccess() {
                 MyLog.log("inviteByIdentity() ==> onSuccess()");
+                // send notification
+                sendFCMAcceptNotification();
             }
         });
     }
 
-    private void sendFCMNotification() {
+    private void sendFCMAcceptNotification() {
         FCMSenderService.FCMRequest fcmRequest = new FCMSenderService.FCMRequest.Builder()
                 .to(mChatConsultRequestData.getSenderToken())
                 .title(getString(R.string.title_chat_consult_acceptance))
@@ -318,7 +290,18 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
                 });
     }
 
+    private void openChannel() {
+        MyLog.log("openChannel()");
+        initChatMessageAdapter();
+        getMessageHistory(null, mChannel);
+        mChannel.setListener(this);
 
+        // check closed channel
+        boolean closedChatConsult = mChannel.getAttributes().optBoolean(TwilioChannel.ATTR_CLOSED_CHANNEL, false);
+        if (closedChatConsult) {
+            mBinding.layoutChatAction.setVisibility(View.GONE);
+        }
+    }
 
     private void sendMessage() {
         String messageBody = mBinding.etMessage.getText().toString().trim();
@@ -338,7 +321,6 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
     }
 
     private void getMessageHistory(Message topMessage, Channel channel) {
-
         MyLog.log("getMessageHistory(); topMessage=" + (topMessage == null ? "null" : topMessage.getMessageBody()));
 
         downloadingHistory = true; // flag download state
@@ -347,9 +329,6 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
         Constants.CallbackListener<List<Message>> callbackListener = new Constants.CallbackListener<List<Message>>() {
             @Override
             public void onSuccess(List<Message> messages) {
-
-                MyLog.log("getMessageHistory() ==> onSuccess() ==> size=" + messages.size());
-
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -398,31 +377,23 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
 
     }
 
-    private void checkMemberInChannelToInitChatMessageAdapter() {
-        MyLog.log("checkMemberInChannelToInitChatMessageAdapter()");
-        Channel channel = mClient.getIpMessagingClient().getChannels().getChannelByUniqueName(mChannelUniqueName);
+    private void initChatMessageAdapter() {
+        MyLog.log("initChatMessageAdapter()");
 
-        if (channel.getMembers().getMembers().length == 2) {
+        if (mChannel.getMembers().getMembers().length == 2) {
             Member me;
             Member friend;
-            if (channel.getMembers().getMembers()[0].getUserInfo().getIdentity().equals(mFriendId)) {
-                friend = channel.getMembers().getMembers()[0];
-                me = channel.getMembers().getMembers()[1];
+            if (mChannel.getMembers().getMembers()[0].getUserInfo().getIdentity().equals(mFriendId)) {
+                friend = mChannel.getMembers().getMembers()[0];
+                me = mChannel.getMembers().getMembers()[1];
             } else {
-                friend = channel.getMembers().getMembers()[1];
-                me = channel.getMembers().getMembers()[0];
+                friend = mChannel.getMembers().getMembers()[1];
+                me = mChannel.getMembers().getMembers()[0];
             }
 
             mChatMessageAdapter = new ChatMessageAdapter(me, friend);
             mBinding.rvChatMessage.setAdapter(mChatMessageAdapter);
 
-            String friendName = friend.getUserInfo().getFriendlyName();
-            if (friendName.equals("")) {
-                friendName = friend.getUserInfo().getIdentity();
-            }
-
-            mBinding.tvTypingIndicator.setText(friendName + " is typing...");
-            mBinding.toolbar.setTitle(friendName);
             if (friend.getUserInfo().isOnline()) {
                 mBinding.toolbar.setSubtitle("Online");
                 mBinding.toolbar.setSubtitleTextColor(Color.WHITE);
@@ -431,6 +402,79 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
                 mBinding.toolbar.setSubtitleTextColor(Color.LTGRAY);
             }
         }
+    }
+
+    private void closeChatConsult() {
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.title_close_chat_consult)
+                .setMessage(R.string.content_close_chat_consult)
+                .setPositiveButton("OK", (dialogInterface, i) -> {
+                    dialogInterface.dismiss();
+                    closeChatConsultChannel();
+                })
+                .setNegativeButton("Cancel", (dialogInterface1, i1) -> dialogInterface1.dismiss())
+                .show();
+    }
+
+    private void closeChatConsultChannel() {
+        MyLog.log("closeChatConsultChannel() closed_channel=" + mChannel.getAttributes().opt(TwilioChannel.ATTR_CLOSED_CHANNEL));
+        try {
+            mChannel.setAttributes(mChannel.getAttributes().put(TwilioChannel.ATTR_CLOSED_CHANNEL, true), new Constants.StatusListener() {
+                @Override
+                public void onSuccess() {
+                    MyLog.log("closeChatConsultChannel() ==> mChannel.setAttributes() ==> onSuccess()");
+
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendFCMCloseChatConsultNotification();
+                        }
+                    });
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendFCMCloseChatConsultNotification() {
+        mProgressDialog.show();
+
+        Member memberFriend = mChannel.getMembers().getMembers()[0].getUserInfo().getIdentity()
+                .equals(mClient.getIpMessagingClient().getMyUserInfo().getIdentity())
+                ? mChannel.getMembers().getMembers()[1] : mChannel.getMembers().getMembers()[0];
+
+        FCMSenderService.FCMRequest fcmRequest = new FCMSenderService.FCMRequest.Builder()
+                .to(memberFriend)
+                .title(getString(R.string.title_chat_consult_closed))
+                .body(String.format(getString(R.string.content_chat_consult_closed),
+                        mClient.getIpMessagingClient().getMyUserInfo().getFriendlyName()))
+                .type(NotificationObject.Type.CHAT_CONSULT_CLOSE)
+                .data(new ChatConsultCloseData(mClient.getIpMessagingClient().getMyUserInfo(), mChannelUniqueName))
+                .build();
+
+        FCMSenderService.send(fcmRequest)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<FCMSenderService.FCMResponse>() {
+                    @Override
+                    public void call(FCMSenderService.FCMResponse fcmResponse) {
+                        mProgressDialog.dismiss();
+                        getActivity().onBackPressed();
+
+                        if (fcmResponse.getSuccess() == 0) {
+                            MyLog.log("Send FCM Notification CHAT_CONSULT_CLOSE failed");
+                        }
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        mProgressDialog.dismiss();
+                        getActivity().onBackPressed();
+
+                        MyLog.log("Send FCM Notification CHAT_CONSULT_CLOSE failed");
+                    }
+                });
     }
 
     /**
@@ -469,16 +513,22 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
     public void onMemberJoin(Member member) {
         MyLog.log("onMemberJoin(); member=" + member.getUserInfo().getIdentity());
         mBinding.tvWaitingMember.setVisibility(View.GONE);
-        checkMemberInChannelToInitChatMessageAdapter();
+        initChatMessageAdapter();
     }
 
     @Override
     public void onMemberChange(Member member) {
         MyLog.log("onMemberChange(); member=" + member.getUserInfo().getIdentity() + "; lastSeen=" + member.getLastConsumedMessageIndex());
-        mChatMessageAdapter.updateMember(member);
+
+        if (getActivity() == null) {
+            return;
+        }
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                mChatMessageAdapter.updateMember(member);
+
                 if (member.getUserInfo().isOnline()) {
                     mBinding.toolbar.setSubtitle("Online");
                     mBinding.toolbar.setSubtitleTextColor(Color.WHITE);
@@ -497,7 +547,7 @@ public class FragmentChatOneOne extends Fragment implements ChannelListener{
 
     @Override
     public void onAttributesChange(Map<String, String> map) {
-
+        MyLog.log("onAttributesChange() map=" + map);
     }
 
     @Override

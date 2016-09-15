@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
 
 
     <com.mhealth.chat.demo.customview.SoftKeyboardHandledLinearLayout
@@ -19,7 +21,8 @@
             android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
             app:navigationIcon="@drawable/ic_arrow_back_white_24dp"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:titleTextColor="#FFF" />
+            app:titleTextColor="#FFF"
+            />
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -64,7 +67,10 @@
                         android:padding="5dp"
                         android:text="@string/waiting_for_member_join_channel"
                         android:textColor="#333"
-                        android:textSize="10dp" />
+                        android:textSize="10dp"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        />
 
                     <LinearLayout
                         android:layout_width="match_parent"
