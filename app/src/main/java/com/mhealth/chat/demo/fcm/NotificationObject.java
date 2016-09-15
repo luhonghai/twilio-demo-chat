@@ -19,7 +19,7 @@ public class NotificationObject<T extends NotificationData> {
     public enum Type {
         DEFAULT("default"),
         CHAT_CONSULT_REQUEST("CHAT_CONSULT_REQUEST", ChatConsultRequestData.class),
-        CHAT_CONSULT_REJECT("CHAT_CONSULT_REJECT", ChatConsultRequestData.class),
+        CHAT_CONSULT_REJECT("CHAT_CONSULT_REJECT", ChatConsultRejectData.class),
         CHAT_CONSULT_ACCEPT("CHAT_CONSULT_ACCEPT", ChatConsultAcceptData.class),
         CHAT_CONSULT_CLOSE("CHAT_CONSULT_CLOSE", ChatConsultRequestData.class),
         ;

@@ -14,7 +14,7 @@ import com.mhealth.chat.demo.direct.MyLog;
 import com.mhealth.chat.demo.fcm.FCMSenderService;
 import com.mhealth.chat.demo.fcm.NotificationData;
 import com.mhealth.chat.demo.fcm.NotificationObject;
-import com.mhealth.chat.demo.fcm.data.ChatConsultRejectData;
+import com.mhealth.chat.demo.fcm.ChatConsultRejectData;
 import com.mhealth.chat.demo.twilio.TwilioClient;
 
 import rx.android.schedulers.AndroidSchedulers;
