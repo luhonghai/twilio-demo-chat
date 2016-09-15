@@ -13,6 +13,8 @@ public class ChatConsultAcceptData extends ChatConsultRequestData{
 
     String channelUniqueName;
 
+
+
     public String getChannelUniqueName() {
         return channelUniqueName;
     }

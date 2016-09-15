@@ -133,4 +133,12 @@
     <string name="waiting_for_member_join_channel">Waiting for %s to join...</string>
     <string name="member_is_typing">%s is typing...</string>
 
+    <string name="title_chat_recent">Chat Recent</string>
+
+    <string name="title_close_chat_consult">Close Chat Consult</string>
+    <string name="content_close_chat_consult">Do you really want to close this chat consult?</string>
+
+    <string name="title_chat_consult_closed">Chat Consult Closed</string>
+    <string name="content_chat_consult_closed">%s closed chat consult</string>
+
 </resources>

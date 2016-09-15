@@ -19,45 +19,11 @@
             android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
             app:navigationIcon="@drawable/ic_arrow_back_white_24dp"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+            app:title="@string/title_chat_recent"
             app:titleTextColor="#FFF" />
 
-        <EditText
-            android:id="@+id/et_friend_id"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter friend_id to chat" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="3">
-
-            <Button
-                android:id="@+id/btn_lily"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Lily" />
-
-            <Button
-                android:id="@+id/btn_alex"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Alex" />
-
-            <Button
-                android:id="@+id/btn_chat"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Chat" />
-
-        </LinearLayout>
-
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/rv_chat_user"
+            android:id="@+id/rv_chat_recent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp" />

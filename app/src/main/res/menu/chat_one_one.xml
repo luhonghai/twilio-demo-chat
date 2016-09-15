@@ -3,23 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
     <item
-        android:id="@+id/action_get_me_last_seen"
-        android:title="ME last seen"
+        android:id="@+id/action_close_chat_consult"
+        android:title="Close Chat Consult"
         app:showAsAction="never"
         />
-
-    <item
-        android:id="@+id/action_set_me_last_seen"
-        android:title="Set ME last seen"
-        app:showAsAction="never"
-        />
-
-    <item
-        android:id="@+id/action_get_friend_last_seen"
-        android:title="FRIEND last seen"
-        app:showAsAction="never"
-        />
-
-
 
 </menu>
